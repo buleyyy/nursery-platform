@@ -1,103 +1,118 @@
 const pool = require('../config/database');
 
-// GET all products
+// Get all products dengan optional filter
 exports.getAllProducts = async (req, res) => {
   try {
-    const [products] = await pool.query('SELECT * FROM products');
-
-    return res.status(200).json({
+    const { category, priceMin, priceMax } = req.query;
+    
+    let query = 'SELECT p.*, c.name as category_name FROM products p JOIN categories c ON p.category_id = c.id WHERE 1=1';
+    const params = [];
+    
+    // Filter by category
+    if (category) {
+      query += ' AND c.name = ?';
+      params.push(category);
+    }
+    
+    // Filter by price range
+    if (priceMin) {
+      query += ' AND p.price >= ?';
+      params.push(priceMin);
+    }
+    if (priceMax) {
+      query += ' AND p.price <= ?';
+      params.push(priceMax);
+    }
+    
+    query += ' ORDER BY p.created_at DESC';
+    
+    const connection = await pool.getConnection();
+    const [products] = await connection.query(query, params);
+    connection.release();
+    
+    res.json({
       success: true,
       data: products,
-      total: products.length
+      count: products.length
     });
-
   } catch (error) {
-    console.error('getAllProducts error:', error);
-    return res.status(500).json({
+    console.error('Error:', error);
+    res.status(500).json({
       success: false,
-      message: 'Failed to fetch products'
+      message: 'Error fetching products',
+      error: error.message
     });
   }
 };
 
-// GET product by ID
+// Get product by ID
 exports.getProductById = async (req, res) => {
   try {
     const { id } = req.params;
     
-    if (!id || isNaN(id)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid product ID'
-      });
-    }
-
-    const [products] = await pool.query(
-      'SELECT * FROM products WHERE id = ?',
-      [id]
-    );
-
+    const query = 'SELECT p.*, c.name as category_name FROM products p JOIN categories c ON p.category_id = c.id WHERE p.id = ?';
+    
+    const connection = await pool.getConnection();
+    const [products] = await connection.query(query, [id]);
+    connection.release();
+    
     if (products.length === 0) {
       return res.status(404).json({
         success: false,
         message: 'Product not found'
       });
     }
-
-    return res.status(200).json({
+    
+    res.json({
       success: true,
       data: products[0]
     });
-
   } catch (error) {
-    console.error('getProductById error:', error);
-    return res.status(500).json({
+    console.error('Error:', error);
+    res.status(500).json({
       success: false,
-      message: 'Failed to fetch product'
+      message: 'Error fetching product',
+      error: error.message
     });
   }
 };
 
-// CREATE product
+// Create new product (admin only)
 exports.createProduct = async (req, res) => {
   try {
-    const { name, price, category_id } = req.body;
-
-    if (!name || !price || !category_id) {
+    const { category_id, name, description, care_instructions, price, stock_quantity } = req.body;
+    
+    // Validation
+    if (!category_id || !name || !price) {
       return res.status(400).json({
         success: false,
-        message: 'name, price, and category_id are required'
+        message: 'Missing required fields: category_id, name, price'
       });
     }
-
-    if (isNaN(price)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Price must be a number'
-      });
-    }
-
-    const [result] = await pool.query(
-      'INSERT INTO products (name, price, category_id) VALUES (?, ?, ?)',
-      [name, price, category_id]
-    );
-
-    return res.status(201).json({
+    
+    const query = 'INSERT INTO products (category_id, name, description, care_instructions, price, stock_quantity) VALUES (?, ?, ?, ?, ?, ?)';
+    
+    const connection = await pool.getConnection();
+    const [result] = await connection.query(query, [category_id, name, description, care_instructions, price, stock_quantity || 0]);
+    connection.release();
+    
+    res.status(201).json({
       success: true,
       message: 'Product created successfully',
       data: {
         id: result.insertId,
+        category_id,
         name,
         price,
-        category_id
+        stock_quantity: stock_quantity || 0
       }
     });
-
   } catch (error) {
-    console.error('createProduct error:', error);
-    return res.status(500).json({
+    console.error('Error:', error);
+    res.status(500).json({
       success: false,
-      message: 'Failed to create product'
+      message: 'Error creating product',
+      error: error.message
     });
   }
 };
