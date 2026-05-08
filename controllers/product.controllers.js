@@ -1,118 +1,100 @@
 const pool = require('../config/database');
 
-// Get all products dengan optional filter
+// ─── Get All Products (public) ───────────────────────────────────────────────
 exports.getAllProducts = async (req, res) => {
   try {
     const { category, priceMin, priceMax } = req.query;
-    
-    let query = 'SELECT p.*, c.name as category_name FROM products p JOIN categories c ON p.category_id = c.id WHERE 1=1';
+
+    let query = `
+      SELECT
+        p.id,
+        p.category_id,
+        p.name,
+        p.description,
+        p.care_instructions,
+        p.price,
+        COALESCE(p.stock_quantity, 0) AS stock_quantity,
+        p.image_url,
+        COALESCE(p.is_active, 1)      AS is_active,
+        p.created_at,
+        c.name AS category_name
+      FROM products p
+      JOIN categories c ON p.category_id = c.id
+      WHERE COALESCE(p.is_active, 1) = 1
+    `;
     const params = [];
-    
-    // Filter by category
-    if (category) {
-      query += ' AND c.name = ?';
-      params.push(category);
-    }
-    
-    // Filter by price range
-    if (priceMin) {
-      query += ' AND p.price >= ?';
-      params.push(priceMin);
-    }
-    if (priceMax) {
-      query += ' AND p.price <= ?';
-      params.push(priceMax);
-    }
-    
+
+    if (category) { query += ' AND c.name = ?'; params.push(category); }
+    if (priceMin) { query += ' AND p.price >= ?'; params.push(Number(priceMin)); }
+    if (priceMax) { query += ' AND p.price <= ?'; params.push(Number(priceMax)); }
+
     query += ' ORDER BY p.created_at DESC';
-    
-    const connection = await pool.getConnection();
-    const [products] = await connection.query(query, params);
-    connection.release();
-    
-    res.json({
-      success: true,
-      data: products,
-      count: products.length
-    });
+
+    const [products] = await pool.query(query, params);
+
+    return res.json({ success: true, data: products, count: products.length });
   } catch (error) {
-    console.error('Error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching products',
-      error: error.message
-    });
+    console.error('❌ getAllProducts error:', error.sqlMessage || error.message);
+    return res.status(500).json({ success: false, message: 'Gagal mengambil produk' });
   }
 };
 
-// Get product by ID
+// ─── Get Product by ID ───────────────────────────────────────────────────────
 exports.getProductById = async (req, res) => {
   try {
     const { id } = req.params;
-    
-    const query = 'SELECT p.*, c.name as category_name FROM products p JOIN categories c ON p.category_id = c.id WHERE p.id = ?';
-    
-    const connection = await pool.getConnection();
-    const [products] = await connection.query(query, [id]);
-    connection.release();
-    
-    if (products.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'Product not found'
-      });
+
+    const [[product]] = await pool.query(
+      `SELECT
+         p.id, p.category_id, p.name, p.description, p.care_instructions,
+         p.price, COALESCE(p.stock_quantity, 0) AS stock_quantity,
+         p.image_url, p.created_at,
+         c.name AS category_name
+       FROM products p
+       JOIN categories c ON p.category_id = c.id
+       WHERE p.id = ?`,
+      [id]
+    );
+
+    if (!product) {
+      return res.status(404).json({ success: false, message: 'Produk tidak ditemukan' });
     }
-    
-    res.json({
-      success: true,
-      data: products[0]
-    });
+
+    return res.json({ success: true, data: product });
   } catch (error) {
-    console.error('Error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching product',
-      error: error.message
-    });
+    console.error('❌ getProductById error:', error.sqlMessage || error.message);
+    return res.status(500).json({ success: false, message: 'Gagal mengambil produk' });
   }
 };
 
-// Create new product (admin only)
+// ─── Create Product (admin) ──────────────────────────────────────────────────
 exports.createProduct = async (req, res) => {
   try {
-    const { category_id, name, description, care_instructions, price, stock_quantity } = req.body;
-    
-    // Validation
+    const { category_id, name, description, care_instructions,
+            price, stock_quantity, image_emoji } = req.body;
+
     if (!category_id || !name || !price) {
       return res.status(400).json({
         success: false,
-        message: 'Missing required fields: category_id, name, price'
+        message: 'category_id, name, dan price wajib diisi'
       });
     }
-    
-    const query = 'INSERT INTO products (category_id, name, description, care_instructions, price, stock_quantity) VALUES (?, ?, ?, ?, ?, ?)';
-    
-    const connection = await pool.getConnection();
-    const [result] = await connection.query(query, [category_id, name, description, care_instructions, price, stock_quantity || 0]);
-    connection.release();
-    
-    res.status(201).json({
+
+    const [result] = await pool.query(
+      `INSERT INTO products
+         (category_id, name, description, care_instructions, price, stock_quantity, image_emoji)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [category_id, name, description || null, care_instructions || null,
+       price, stock_quantity || 0, image_emoji || '🌿']
+    );
+
+    return res.status(201).json({
       success: true,
-      message: 'Product created successfully',
-      data: {
-        id: result.insertId,
-        category_id,
-        name,
-        price,
-        stock_quantity: stock_quantity || 0
-      }
+      message: 'Produk berhasil dibuat',
+      data: { id: result.insertId, category_id, name, price, stock_quantity: stock_quantity || 0 }
     });
   } catch (error) {
-    console.error('Error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error creating product',
-      error: error.message
-    });
+    console.error('❌ createProduct error:', error.sqlMessage || error.message);
+    return res.status(500).json({ success: false, message: 'Gagal membuat produk' });
   }
 };

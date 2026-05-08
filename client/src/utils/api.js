@@ -18,29 +18,63 @@ const req = async (method, path, body, auth = false) => {
 };
 
 export const api = {
-  // Public
-  getProducts:     (params = '') => req('GET', `/products${params}`),
-  getProduct:      (id)          => req('GET', `/products/${id}`),
-  createOrder:     (body)        => req('POST', '/orders', body),
-  trackOrder:      (params)      => req('GET', `/orders/track?${params}`),
+  // ── Public ────────────────────────────────────────────────────────────────
+  getProducts:      (params = '')  => req('GET', `/products${params}`),
+  getProduct:       (id)           => req('GET', `/products/${id}`),
+  createOrder:      (body)         => req('POST', '/orders', body),
+  trackOrder:       (params)       => req('GET', `/orders/track?${params}`),
 
-  // Auth
-  login:           (body)        => req('POST', '/auth/login', body),
+  // Upload bukti transfer — kirim FormData, bukan JSON
+  uploadProof: async (orderNumber, file) => {
+    const fd = new FormData();
+    fd.append('order_number', orderNumber);
+    fd.append('proof', file);
 
-  // Admin (protected)
-  dashboard:       ()            => req('GET', '/admin/dashboard', null, true),
-  adminOrders:     (params = '') => req('GET', `/admin/orders${params}`, null, true),
-  adminOrderDetail:(id)          => req('GET', `/admin/orders/${id}`, null, true),
-  updateStatus:    (id, body)    => req('PUT', `/admin/orders/${id}/status`, body, true),
-  confirmPayment:  (id, body)    => req('PUT', `/admin/orders/${id}/payment`, body, true),
-  adminProducts:   ()            => req('GET', '/admin/products', null, true),
-  adminCategories: ()            => req('GET', '/admin/categories', null, true),
-  createProduct:   (body)        => req('POST', '/admin/products', body, true),
-  updateProduct:   (id, body)    => req('PUT', `/admin/products/${id}`, body, true),
-  deleteProduct:   (id)          => req('DELETE', `/admin/products/${id}`, null, true),
+    const res = await fetch(`${BASE}/orders/upload-proof`, {
+      method: 'POST',
+      body: fd,
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Upload gagal');
+    return data;
+  },
+
+  // ── Auth ──────────────────────────────────────────────────────────────────
+  login:            (body)         => req('POST', '/auth/login', body),
+
+  // ── Admin (protected) ─────────────────────────────────────────────────────
+  dashboard:        ()             => req('GET', '/admin/dashboard', null, true),
+  adminOrders:      (params = '')  => req('GET', `/admin/orders${params}`, null, true),
+  adminOrderDetail: (id)           => req('GET', `/admin/orders/${id}`, null, true),
+  updateStatus:     (id, body)     => req('PUT', `/admin/orders/${id}/status`, body, true),
+  confirmPayment:   (id, body)     => req('PUT', `/admin/orders/${id}/payment`, body, true),
+  rejectPayment:    (id, body)     => req('PUT', `/admin/orders/${id}/reject`,  body, true),
+  adminProducts:    ()             => req('GET', '/admin/products', null, true),
+  adminCategories:  ()             => req('GET', '/admin/categories', null, true),
+  createCategory:   (body)         => req('POST', '/admin/categories', body, true),
+  updateCategory:   (id, body)     => req('PUT', `/admin/categories/${id}`, body, true),
+  deleteCategory:   (id)           => req('DELETE', `/admin/categories/${id}`, null, true),
+  createProduct:    (body)         => req('POST', '/admin/products', body, true),
+  updateProduct:    (id, body)     => req('PUT', `/admin/products/${id}`, body, true),
+  deleteProduct:    (id)           => req('DELETE', `/admin/products/${id}`, null, true),
+
+  // Upload foto produk — FormData
+  uploadProductImage: async (productId, file) => {
+    const fd = new FormData();
+    fd.append('image', file);
+    const res = await fetch(`${BASE}/admin/products/${productId}/image`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${getAdminToken()}` },
+      body: fd,
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Upload foto gagal');
+    return data;
+  },
+  salesReport:      (year)         => req('GET', `/admin/sales-report?year=${year}`, null, true),
 };
 
-// Cart helpers (localStorage)
+// ─── Cart helpers (localStorage) ─────────────────────────────────────────────
 export const cart = {
   get:    () => JSON.parse(localStorage.getItem('cart') || '[]'),
   save:   (items) => localStorage.setItem('cart', JSON.stringify(items)),
@@ -48,16 +82,17 @@ export const cart = {
   count:  () => cart.get().reduce((sum, i) => sum + i.quantity, 0),
 
   add: (product, quantity = 1) => {
-    const items = cart.get();
+    const items    = cart.get();
     const existing = items.find(i => i.product_id === product.id);
     if (existing) {
       existing.quantity = Math.min(existing.quantity + quantity, product.stock_quantity);
     } else {
-      items.push({ product_id: product.id, name: product.name, price: product.price,
-                   image_emoji: product.image_emoji, quantity });
+      items.push({
+        product_id: product.id, name: product.name,
+        price: product.price, image_emoji: product.image_emoji, quantity,
+      });
     }
-    cart.save(items);
-    return items;
+    cart.save(items); return items;
   },
 
   remove: (productId) => {
@@ -73,11 +108,10 @@ export const cart = {
   total: () => cart.get().reduce((sum, i) => sum + i.price * i.quantity, 0),
 };
 
-// Format currency
-export const rupiah = (num) =>
-  'Rp ' + Number(num).toLocaleString('id-ID');
+// ─── Format currency ─────────────────────────────────────────────────────────
+export const rupiah = (num) => 'Rp ' + Number(num).toLocaleString('id-ID');
 
-// Status labels & badge class
+// ─── Status labels & badge class ─────────────────────────────────────────────
 export const statusLabel = {
   pending:    'Menunggu',
   confirmed:  'Dikonfirmasi',
@@ -91,3 +125,10 @@ export const statusLabel = {
 };
 
 export const statusBadge = (s) => `badge badge-${s}`;
+
+// ─── Proof image URL helper ───────────────────────────────────────────────────
+export const proofUrl = (proofPath) => {
+  if (!proofPath) return null;
+  const filename = proofPath.split('/').pop();
+  return `http://localhost:3006/api/proof/${filename}`;
+};

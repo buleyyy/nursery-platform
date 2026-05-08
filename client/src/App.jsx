@@ -8,11 +8,13 @@ import Checkout      from './pages/Checkout';
 import OrderTracking from './pages/OrderTracking';
 import PaymentInfo   from './pages/PaymentInfo';
 
-import AdminLogin     from './pages/AdminLogin';
-import AdminDashboard from './pages/AdminDashboard';
-import AdminOrders    from './pages/AdminOrders';
-import AdminProducts  from './pages/AdminProducts';
-import AdminPayments  from './pages/AdminPayments';
+import AdminLogin       from './pages/AdminLogin';
+import AdminDashboard   from './pages/AdminDashboard';
+import AdminOrders      from './pages/AdminOrders';
+import AdminProducts    from './pages/AdminProducts';
+import AdminPayments    from './pages/AdminPayments';
+import AdminCategories  from './pages/AdminCategories';
+import AdminSalesReport from './pages/AdminSalesReport';
 
 const ProtectedAdmin = ({ children }) => {
   const token = localStorage.getItem('adminToken');
@@ -43,6 +45,12 @@ export default function App() {
         } />
         <Route path="/admin/payments" element={
           <ProtectedAdmin><AdminLayout><AdminPayments /></AdminLayout></ProtectedAdmin>
+        } />
+        <Route path="/admin/categories" element={
+          <ProtectedAdmin><AdminLayout><AdminCategories /></AdminLayout></ProtectedAdmin>
+        } />
+        <Route path="/admin/sales-report" element={
+          <ProtectedAdmin><AdminLayout><AdminSalesReport /></AdminLayout></ProtectedAdmin>
         } />
       </Routes>
     </BrowserRouter>

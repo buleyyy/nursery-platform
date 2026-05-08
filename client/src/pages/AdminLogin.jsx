@@ -25,7 +25,7 @@ export default function AdminLogin() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'var(--bg)',
+      background: 'linear-gradient(145deg, #f0fdf4 0%, #dcfce7 40%, #f5f9f5 100%)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -33,42 +33,50 @@ export default function AdminLogin() {
       position: 'relative',
       overflow: 'hidden',
     }}>
-      {/* Background decoration */}
+      {/* Background leaf decoration */}
       <div style={{
-        position: 'absolute', top: '15%', left: '50%',
-        transform: 'translateX(-50%)',
-        width: 500, height: 500,
-        background: 'radial-gradient(circle, rgba(82,214,138,0.04) 0%, transparent 70%)',
+        position: 'absolute', top: '-80px', right: '-80px',
+        width: 320, height: 320,
+        borderRadius: '50%',
+        background: 'rgba(45,140,78,0.06)',
+        pointerEvents: 'none',
+      }} />
+      <div style={{
+        position: 'absolute', bottom: '-60px', left: '-60px',
+        width: 240, height: 240,
+        borderRadius: '50%',
+        background: 'rgba(45,140,78,0.05)',
         pointerEvents: 'none',
       }} />
 
-      <div style={{ width: '100%', maxWidth: 360, position: 'relative' }}>
+      <div style={{ width: '100%', maxWidth: 380, position: 'relative' }}>
         {/* Logo mark */}
-        <div style={{ textAlign: 'center', marginBottom: 36 }}>
+        <div style={{ textAlign: 'center', marginBottom: 32 }}>
           <div style={{
-            width: 52, height: 52, margin: '0 auto 16px',
-            background: 'var(--green-dim)',
-            border: '1px solid rgba(82,214,138,0.2)',
-            borderRadius: 14,
+            width: 60, height: 60, margin: '0 auto 16px',
+            background: 'var(--green)',
+            borderRadius: 16,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: '1.7rem',
+            fontSize: '1.9rem',
+            boxShadow: '0 6px 24px rgba(45,140,78,0.3)',
           }}>🌿</div>
           <h1 style={{
             fontFamily: 'var(--font-display)',
-            fontSize: '1.6rem', fontWeight: 600,
-            color: 'var(--text)', marginBottom: 5,
+            fontSize: '1.8rem', fontWeight: 700,
+            color: 'var(--text)', marginBottom: 6,
           }}>Ali Nursery</h1>
-          <p style={{ color: 'var(--muted)', fontSize: '13px' }}>
+          <p style={{ color: 'var(--muted)', fontSize: '14px', fontWeight: 500 }}>
             Masuk ke panel admin
           </p>
         </div>
 
         {/* Card */}
         <div style={{
-          background: 'var(--card)',
-          border: '1px solid var(--border)',
-          borderRadius: 'var(--radius-xl)',
-          padding: '28px 26px',
+          background: '#ffffff',
+          border: '1.5px solid var(--border)',
+          borderRadius: 20,
+          padding: '32px 28px',
+          boxShadow: '0 8px 40px rgba(0,60,20,0.10)',
         }}>
           {error && (
             <div className="alert alert-danger" style={{ marginBottom: 18, fontSize: '13px' }}>
@@ -76,7 +84,7 @@ export default function AdminLogin() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div className="form-group">
               <label className="form-label">Username</label>
               <input
@@ -109,11 +117,11 @@ export default function AdminLogin() {
               type="submit"
               className="btn btn-primary btn-full btn-lg"
               disabled={loading}
-              style={{ marginTop: 6, height: 44 }}
+              style={{ marginTop: 4, height: 46 }}
             >
               {loading
-                ? <><span className="spinner" style={{ width: 15, height: 15, borderWidth: 2 }} /> Masuk...</>
-                : 'Masuk'}
+                ? <><span className="spinner" style={{ width: 15, height: 15, borderWidth: 2, borderColor: 'rgba(255,255,255,0.3)', borderTopColor: '#fff' }} /> Masuk...</>
+                : '🔐 Masuk'}
             </button>
           </form>
         </div>

@@ -23,28 +23,33 @@ export default function UserLayout({ children }) {
       {/* ── Navbar ── */}
       <nav style={{
         position: 'sticky', top: 0, zIndex: 100,
-        height: 58,
+        height: 60,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '0 6%',
-        background: scrolled ? 'rgba(8,15,11,0.94)' : 'transparent',
+        background: scrolled ? 'rgba(255,255,255,0.95)' : 'var(--surface)',
         backdropFilter: scrolled ? 'blur(16px)' : 'none',
-        borderBottom: scrolled ? '1px solid var(--border)' : '1px solid transparent',
-        transition: 'background 0.3s, border-color 0.3s',
+        borderBottom: '1.5px solid var(--border)',
+        boxShadow: scrolled ? '0 2px 16px rgba(0,60,20,0.08)' : 'none',
+        transition: 'box-shadow 0.3s',
       }}>
         {/* Logo */}
         <Link to="/" style={{
-          display: 'flex', alignItems: 'center', gap: 9, textDecoration: 'none',
+          display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none',
         }}>
           <div style={{
-            width: 28, height: 28, borderRadius: 7,
-            background: 'var(--green-dim)',
-            border: '1px solid rgba(82,214,138,0.25)',
+            width: 32, height: 32, borderRadius: 9,
+            background: 'var(--green)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: '14px',
-          }}>🌿</div>
+            boxShadow: '0 2px 8px rgba(45,140,78,0.28)',
+          }}>
+            <svg width="17" height="17" viewBox="0 0 18 18" fill="none">
+              <path d="M9 2C9 2 4 6 4 10.5a5 5 0 0010 0C14 6 9 2 9 2z" fill="white" opacity=".9"/>
+              <path d="M9 10.5V16" stroke="white" strokeWidth="1.4" strokeLinecap="round"/>
+            </svg>
+          </div>
           <span style={{
             fontFamily: 'var(--font-display)',
-            fontWeight: 600, fontSize: '1.05rem',
+            fontWeight: 700, fontSize: '1.1rem',
             color: 'var(--text)', letterSpacing: '-0.2px',
           }}>Ali Nursery</span>
         </Link>
@@ -56,33 +61,41 @@ export default function UserLayout({ children }) {
             { to: '/track',  label: 'Lacak Pesanan' },
           ].map(({ to, label }) => (
             <Link key={to} to={to} style={{
-              color: isActive(to) ? 'var(--text)' : 'var(--text-2)',
-              fontSize: '13.5px', fontWeight: 500,
+              color: isActive(to) ? 'var(--green)' : 'var(--text-2)',
+              fontSize: '13.5px', fontWeight: isActive(to) ? 700 : 500,
               textDecoration: 'none',
-              padding: '5px 12px',
-              borderRadius: 6,
-              background: isActive(to) ? 'var(--elevated)' : 'transparent',
+              padding: '5px 13px',
+              borderRadius: 7,
+              background: isActive(to) ? 'var(--green-light)' : 'transparent',
               transition: 'all 0.18s',
-            }}
-            onMouseEnter={e => !isActive(to) && (e.target.style.color = 'var(--text)')}
-            onMouseLeave={e => !isActive(to) && (e.target.style.color = 'var(--text-2)')}
-            >{label}</Link>
+            }}>{label}</Link>
           ))}
         </div>
 
         {/* Cart button */}
         <button
           onClick={() => navigate('/checkout')}
-          className="btn btn-outline btn-sm"
-          style={{ gap: 7, paddingLeft: 12 }}
+          className="btn btn-sm"
+          style={{
+            gap: 7, paddingLeft: 13, paddingRight: 14,
+            background: cartCount > 0 ? 'var(--green)' : 'var(--elevated)',
+            color: cartCount > 0 ? '#fff' : 'var(--text-2)',
+            border: '1.5px solid',
+            borderColor: cartCount > 0 ? 'var(--green)' : 'var(--border)',
+            boxShadow: cartCount > 0 ? '0 2px 8px rgba(45,140,78,0.25)' : 'none',
+          }}
         >
           <span className="cart-badge">
-            <span style={{ fontSize: '15px' }}>🛒</span>
+            <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+              <path d="M1 1h2l2 7h7l1.5-5H5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+              <circle cx="7" cy="12.5" r="1" fill="currentColor"/>
+              <circle cx="12" cy="12.5" r="1" fill="currentColor"/>
+            </svg>
             {cartCount > 0 && (
-              <span className="cart-badge-count">{cartCount}</span>
+              <span className="cart-badge-count" style={{ background: '#fff', color: 'var(--green)' }}>{cartCount}</span>
             )}
           </span>
-          <span style={{ fontSize: '13px', color: cartCount > 0 ? 'var(--text)' : 'var(--text-2)' }}>
+          <span style={{ fontSize: '13px', fontWeight: 600 }}>
             {cartCount > 0 ? `${cartCount} item` : 'Keranjang'}
           </span>
         </button>
@@ -92,18 +105,27 @@ export default function UserLayout({ children }) {
 
       {/* ── Footer ── */}
       <footer style={{
-        borderTop: '1px solid var(--border)',
+        borderTop: '1.5px solid var(--border)',
         padding: '28px 6%',
         marginTop: 80,
+        background: 'var(--elevated)',
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         flexWrap: 'wrap', gap: 16,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: '13px' }}>🌿</span>
+          <div style={{ width: 24, height: 24, borderRadius: 6,
+            background: 'var(--green)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <svg width="13" height="13" viewBox="0 0 18 18" fill="none">
+              <path d="M9 2C9 2 4 6 4 10.5a5 5 0 0010 0C14 6 9 2 9 2z" fill="white" opacity=".9"/>
+              <path d="M9 10.5V16" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+          </div>
           <span style={{
             fontFamily: 'var(--font-display)',
-            fontWeight: 600, fontSize: '0.95rem',
-            color: 'var(--text-2)',
+            fontWeight: 700, fontSize: '0.95rem',
+            color: 'var(--text)',
           }}>Ali Nursery</span>
         </div>
 
@@ -112,8 +134,8 @@ export default function UserLayout({ children }) {
         </p>
 
         <div style={{ display: 'flex', gap: 18 }}>
-          <Link to="/"      style={{ color: 'var(--muted)', fontSize: '12.5px' }}>Katalog</Link>
-          <Link to="/track" style={{ color: 'var(--muted)', fontSize: '12.5px' }}>Lacak Pesanan</Link>
+          <Link to="/"      style={{ color: 'var(--muted)', fontSize: '12.5px', fontWeight: 500 }}>Katalog</Link>
+          <Link to="/track" style={{ color: 'var(--muted)', fontSize: '12.5px', fontWeight: 500 }}>Lacak Pesanan</Link>
         </div>
       </footer>
     </>

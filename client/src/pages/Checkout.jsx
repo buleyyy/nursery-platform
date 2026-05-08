@@ -52,77 +52,120 @@ export default function Checkout() {
 
   if (items.length === 0) return (
     <div style={{ maxWidth: 480, margin: '80px auto', textAlign: 'center', padding: '0 5%' }}>
-      <div style={{ fontSize: '4rem', marginBottom: 16 }}>🛒</div>
-      <h2>Keranjang Kosong</h2>
-      <p style={{ color: 'var(--text-2)', marginTop: 8, marginBottom: 24 }}>
+      <div style={{ fontSize: '5rem', marginBottom: 16 }}>🛒</div>
+      <h2 style={{ color: 'var(--text)', marginBottom: 10 }}>Keranjang Kosong</h2>
+      <p style={{ color: 'var(--text-2)', marginTop: 8, marginBottom: 28 }}>
         Tambahkan tanaman ke keranjang dulu ya.
       </p>
       <button className="btn btn-primary btn-lg" onClick={() => navigate('/')}>
-        Lihat Katalog
+        🌿 Lihat Katalog
       </button>
     </div>
   );
 
   return (
-    <div style={{ maxWidth: 860, margin: '0 auto', padding: '32px 5% 60px' }}>
-      <h1 style={{ marginBottom: 24 }}>Checkout</h1>
+    <div style={{ maxWidth: 900, margin: '0 auto', padding: '36px 5% 72px' }}>
+      {/* Header */}
+      <div style={{ marginBottom: 30 }}>
+        <button
+          className="btn btn-ghost btn-sm"
+          style={{ marginBottom: 14, color: 'var(--muted)' }}
+          onClick={() => navigate('/')}
+        >
+          ← Kembali
+        </button>
+        <h1 style={{
+          fontFamily: 'var(--font-display)',
+          fontSize: '2rem', fontWeight: 700, color: 'var(--text)',
+        }}>Checkout</h1>
+        <p style={{ color: 'var(--muted)', fontSize: '14px', marginTop: 4 }}>
+          Periksa pesanan dan isi data pengiriman
+        </p>
+      </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, alignItems: 'start' }}>
         {/* ── Order Summary ── */}
-        <div className="card">
-          <h3 style={{ marginBottom: 16 }}>Ringkasan Pesanan</h3>
+        <div>
+          <div className="card">
+            <h3 style={{ marginBottom: 18, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: '1.1em' }}>🛒</span> Ringkasan Pesanan
+            </h3>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {items.map(item => (
-              <div key={item.product_id} style={{
-                display: 'flex', alignItems: 'center', gap: 12,
-                padding: '12px 0', borderBottom: '1px solid var(--border)',
-              }}>
-                <span style={{ fontSize: '2rem' }}>{item.image_emoji || '🌿'}</span>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 600, fontSize: '14px' }}>{item.name}</div>
-                  <div style={{ color: 'var(--muted)', fontSize: '13px' }}>{rupiah(item.price)} / item</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+              {items.map((item, idx) => (
+                <div key={item.product_id} style={{
+                  display: 'flex', alignItems: 'center', gap: 12,
+                  padding: '14px 0',
+                  borderBottom: idx < items.length - 1 ? '1px solid var(--border)' : 'none',
+                }}>
+                  <div style={{
+                    width: 48, height: 48, borderRadius: 10,
+                    background: 'linear-gradient(135deg, #e8f5e9, #c8e6c9)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '1.6rem', flexShrink: 0,
+                  }}>
+                    {item.image_emoji || '🌿'}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, fontSize: '13.5px', color: 'var(--text)' }}>
+                      {item.name}
+                    </div>
+                    <div style={{ color: 'var(--muted)', fontSize: '12.5px', marginTop: 2 }}>
+                      {rupiah(item.price)} / item
+                    </div>
+                  </div>
+                  <div className="qty-control" style={{ transform: 'scale(0.85)', transformOrigin: 'right' }}>
+                    <button className="qty-btn" onClick={() => updateQty(item.product_id, item.quantity - 1)}>−</button>
+                    <span className="qty-val">{item.quantity}</span>
+                    <button className="qty-btn" onClick={() => updateQty(item.product_id, item.quantity + 1)}>+</button>
+                  </div>
+                  <div style={{ fontWeight: 700, fontSize: '14px', minWidth: 85, textAlign: 'right', color: 'var(--text)' }}>
+                    {rupiah(item.price * item.quantity)}
+                  </div>
+                  <button
+                    style={{
+                      background: 'none', border: 'none', cursor: 'pointer',
+                      color: 'var(--muted)', fontSize: '15px', padding: '4px 6px',
+                      borderRadius: 6, transition: 'all 0.15s',
+                      lineHeight: 1,
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = '#fee2e2'; e.currentTarget.style.color = '#b91c1c'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--muted)'; }}
+                    onClick={() => removeItem(item.product_id)}
+                  >✕</button>
                 </div>
-                <div className="qty-control" style={{ transform: 'scale(0.85)', transformOrigin: 'right' }}>
-                  <button className="qty-btn" onClick={() => updateQty(item.product_id, item.quantity - 1)}>−</button>
-                  <span className="qty-val">{item.quantity}</span>
-                  <button className="qty-btn" onClick={() => updateQty(item.product_id, item.quantity + 1)}>+</button>
-                </div>
-                <div style={{ fontWeight: 700, fontSize: '14px', minWidth: 90, textAlign: 'right' }}>
-                  {rupiah(item.price * item.quantity)}
-                </div>
-                <button className="btn btn-sm btn-danger" style={{ padding: '4px 8px' }}
-                  onClick={() => removeItem(item.product_id)}>✕</button>
-              </div>
-            ))}
+              ))}
+            </div>
+
+            <div style={{
+              marginTop: 16, paddingTop: 16, borderTop: '2px solid var(--border)',
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            }}>
+              <span style={{ color: 'var(--text-2)', fontWeight: 600 }}>Total Pesanan</span>
+              <span style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--green)', fontFamily: 'var(--font-display)' }}>
+                {rupiah(total)}
+              </span>
+            </div>
           </div>
 
-          <div style={{
-            marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--border)',
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          }}>
-            <span style={{ color: 'var(--text-2)' }}>Total Pesanan</span>
-            <span style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--green)' }}>
-              {rupiah(total)}
-            </span>
-          </div>
-
-          <div className="alert alert-info" style={{ marginTop: 16 }}>
+          <div className="alert alert-info" style={{ marginTop: 14 }}>
             💳 Pembayaran dilakukan via transfer bank setelah pesanan dikonfirmasi admin.
           </div>
         </div>
 
         {/* ── Customer Form ── */}
         <div className="card">
-          <h3 style={{ marginBottom: 16 }}>Data Pemesan</h3>
+          <h3 style={{ marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: '1.1em' }}>📋</span> Data Pemesan
+          </h3>
 
           {error && (
-            <div className="alert alert-danger" style={{ marginBottom: 16 }}>
+            <div className="alert alert-danger" style={{ marginBottom: 18 }}>
               ⚠ {error}
             </div>
           )}
 
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div className="form-group">
               <label className="form-label">Nama Lengkap *</label>
               <input className="input" name="customer_name" required
@@ -154,14 +197,14 @@ export default function Checkout() {
             <div className="form-group">
               <label className="form-label">Catatan (opsional)</label>
               <textarea className="textarea" name="notes" rows={2}
-                placeholder="Catatan untuk penjual, misalnya waktu pengiriman..."
+                placeholder="Catatan untuk penjual..."
                 value={form.notes} onChange={handleChange} />
             </div>
 
             <button type="submit" className="btn btn-primary btn-full btn-lg"
-              disabled={loading} style={{ marginTop: 4 }}>
+              disabled={loading} style={{ marginTop: 4, height: 48 }}>
               {loading
-                ? <><span className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} /> Memproses...</>
+                ? <><span className="spinner" style={{ width: 16, height: 16, borderWidth: 2, borderColor: 'rgba(255,255,255,0.3)', borderTopColor: '#fff' }} /> Memproses...</>
                 : '✓ Buat Pesanan'}
             </button>
           </form>
