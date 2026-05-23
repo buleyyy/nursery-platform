@@ -1,5 +1,5 @@
 -- ╔══════════════════════════════════════════════╗
--- ║  Ali Nursery Platform — Database Schema      ║
+-- ║  H. Ali Nursery Platform — Database Schema      ║
 -- ║  Jalankan: mysql -u root -p < schema.sql     ║
 -- ╚══════════════════════════════════════════════╝
 

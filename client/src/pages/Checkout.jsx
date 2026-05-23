@@ -88,7 +88,7 @@ export default function Checkout() {
         <div>
           <div className="card">
             <h3 style={{ marginBottom: 18, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: '1.1em' }}>🛒</span> Ringkasan Pesanan
+              <span style={{ fontSize: '1.1em' }}></span> Ringkasan Pesanan
             </h3>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
@@ -149,14 +149,14 @@ export default function Checkout() {
           </div>
 
           <div className="alert alert-info" style={{ marginTop: 14 }}>
-            💳 Pembayaran dilakukan via transfer bank setelah pesanan dikonfirmasi admin.
+            Pembayaran dilakukan via transfer bank setelah pesanan dikonfirmasi admin.
           </div>
         </div>
 
         {/* ── Customer Form ── */}
         <div className="card">
           <h3 style={{ marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: '1.1em' }}>📋</span> Data Pemesan
+            <span style={{ fontSize: '1.1em' }}></span> Data Pemesan
           </h3>
 
           {error && (

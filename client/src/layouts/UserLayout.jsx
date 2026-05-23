@@ -51,7 +51,7 @@ export default function UserLayout({ children }) {
             fontFamily: 'var(--font-display)',
             fontWeight: 700, fontSize: '1.1rem',
             color: 'var(--text)', letterSpacing: '-0.2px',
-          }}>Ali Nursery</span>
+          }}>H. Ali Nursery</span>
         </Link>
 
         {/* Nav links */}
@@ -72,12 +72,13 @@ export default function UserLayout({ children }) {
           ))}
         </div>
 
-        {/* Cart button */}
+        {/* Cart button — keranjang + jumlah + "item", tanpa bubble */}
         <button
           onClick={() => navigate('/checkout')}
           className="btn btn-sm"
           style={{
-            gap: 7, paddingLeft: 13, paddingRight: 14,
+            display: 'flex', alignItems: 'center', gap: 7,
+            paddingLeft: 13, paddingRight: 14,
             background: cartCount > 0 ? 'var(--green)' : 'var(--elevated)',
             color: cartCount > 0 ? '#fff' : 'var(--text-2)',
             border: '1.5px solid',
@@ -85,17 +86,15 @@ export default function UserLayout({ children }) {
             boxShadow: cartCount > 0 ? '0 2px 8px rgba(45,140,78,0.25)' : 'none',
           }}
         >
-          <span className="cart-badge">
-            <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
-              <path d="M1 1h2l2 7h7l1.5-5H5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
-              <circle cx="7" cy="12.5" r="1" fill="currentColor"/>
-              <circle cx="12" cy="12.5" r="1" fill="currentColor"/>
-            </svg>
-            {cartCount > 0 && (
-              <span className="cart-badge-count" style={{ background: '#fff', color: 'var(--green)' }}>{cartCount}</span>
-            )}
-          </span>
-          <span style={{ fontSize: '13px', fontWeight: 600 }}>
+          {/* Icon keranjang */}
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M1 1.5h2.2l2.1 7.5h6.5l1.7-5.2H5.2" stroke="currentColor" strokeWidth="1.45" strokeLinecap="round" strokeLinejoin="round"/>
+            <circle cx="7.2" cy="13" r="1.1" fill="currentColor"/>
+            <circle cx="12" cy="13" r="1.1" fill="currentColor"/>
+          </svg>
+
+          {/* Jumlah + label — menyamping, tidak ada bubble */}
+          <span style={{ fontSize: '13px', fontWeight: 600, letterSpacing: '-0.1px' }}>
             {cartCount > 0 ? `${cartCount} item` : 'Keranjang'}
           </span>
         </button>
@@ -126,11 +125,11 @@ export default function UserLayout({ children }) {
             fontFamily: 'var(--font-display)',
             fontWeight: 700, fontSize: '0.95rem',
             color: 'var(--text)',
-          }}>Ali Nursery</span>
+          }}>H. Ali Nursery</span>
         </div>
 
         <p style={{ color: 'var(--muted)', fontSize: '12px' }}>
-          © 2026 Ali Nursery · Tanaman hias premium
+          © 2026 H. Ali Nursery · Tanaman hias premium
         </p>
 
         <div style={{ display: 'flex', gap: 18 }}>

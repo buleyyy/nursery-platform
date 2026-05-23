@@ -7,7 +7,7 @@ const mysql = require('mysql2/promise');
 require('dotenv').config();
 
 async function migrate() {
-  console.log('\n🌿 Ali Nursery — Database Migration\n');
+  console.log('\n🌿 H. Ali Nursery — Database Migration\n');
 
   const conn = await mysql.createConnection({
     host:     process.env.DB_HOST     || 'localhost',

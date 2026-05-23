@@ -64,7 +64,7 @@ export default function AdminLogin() {
             fontFamily: 'var(--font-display)',
             fontSize: '1.8rem', fontWeight: 700,
             color: 'var(--text)', marginBottom: 6,
-          }}>Ali Nursery</h1>
+          }}>H. Ali Nursery</h1>
           <p style={{ color: 'var(--muted)', fontSize: '14px', fontWeight: 500 }}>
             Masuk ke panel admin
           </p>
@@ -121,7 +121,7 @@ export default function AdminLogin() {
             >
               {loading
                 ? <><span className="spinner" style={{ width: 15, height: 15, borderWidth: 2, borderColor: 'rgba(255,255,255,0.3)', borderTopColor: '#fff' }} /> Masuk...</>
-                : '🔐 Masuk'}
+                : 'Masuk'}
             </button>
           </form>
         </div>

@@ -12,7 +12,7 @@ const mysql = require('mysql2/promise');
 require('dotenv').config();
 
 async function setup() {
-  console.log('\n🌿 Ali Nursery — Database Setup & Repair\n');
+  console.log('\n🌿 H. Ali Nursery — Database Setup & Repair\n');
 
   const db = process.env.DB_NAME || 'nursery_db';
 

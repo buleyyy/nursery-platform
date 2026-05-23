@@ -65,7 +65,7 @@ export default function AdminLayout({ children }) {
                 fontFamily: 'var(--font-display)',
                 fontWeight: 700, fontSize: '1rem',
                 color: 'var(--text)',
-              }}>Ali Nursery</div>
+              }}>H. Ali Nursery</div>
               <div style={{
                 fontSize: '10px', color: 'var(--muted)',
                 fontWeight: 600, letterSpacing: '0.06em',

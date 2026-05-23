@@ -54,15 +54,31 @@ export default function AdminProducts() {
 
   const loadData = async () => {
     setLoading(true);
+    setError(null);
     try {
-      const [prodRes, catRes] = await Promise.all([
+      // Fetch produk dan kategori secara terpisah agar error satu tidak memblokir yang lain
+      const [prodRes, catRes] = await Promise.allSettled([
         api.adminProducts(),
         api.adminCategories(),
       ]);
-      setProducts(prodRes.data || []);
-      setCategories(catRes.data || []);
-    } catch {}
-    finally { setLoading(false); }
+
+      if (prodRes.status === 'fulfilled') {
+        setProducts(prodRes.value.data || []);
+      } else {
+        console.error('Gagal load produk:', prodRes.reason?.message);
+        setError(prodRes.reason?.message || 'Gagal memuat produk');
+      }
+
+      if (catRes.status === 'fulfilled') {
+        setCategories(catRes.value.data || []);
+      } else {
+        console.error('Gagal load kategori:', catRes.reason?.message);
+      }
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const openAdd = () => {
@@ -152,11 +168,13 @@ export default function AdminProducts() {
   };
 
   const handleDelete = async (id, name) => {
-    if (!window.confirm(`Hapus produk "${name}"?`)) return;
+    if (!window.confirm(`Hapus produk "${name}"?\nProduk tidak akan muncul lagi di katalog.`)) return;
     setDeleting(id);
     try {
-      await api.deleteProduct(id);
-      loadData();
+      const res = await api.deleteProduct(id);
+      if (!res.success) throw new Error(res.message || 'Gagal hapus');
+      // Reload dari server — satu-satunya sumber kebenaran
+      await loadData();
     } catch (e) {
       alert('Gagal hapus: ' + e.message);
     } finally {
@@ -192,6 +210,14 @@ export default function AdminProducts() {
           value={search} onChange={(e) => setSearch(e.target.value)}
         />
       </div>
+
+      {/* Error banner (produk gagal load tapi kategori tetap bisa dipakai) */}
+      {error && !loading && (
+        <div className="alert alert-danger" style={{ marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span>⚠ {error}</span>
+          <button className="btn btn-sm btn-ghost" onClick={loadData}>Coba lagi</button>
+        </div>
+      )}
 
       {/* Table */}
       {loading ? (

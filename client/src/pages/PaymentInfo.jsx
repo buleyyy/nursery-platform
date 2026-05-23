@@ -3,9 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { api, rupiah, proofUrl } from '../utils/api';
 
 const BANK_DETAILS = [
-  { bank: 'BCA',     norek: '1234567890', atas: 'Ali Nursery' },
-  { bank: 'Mandiri', norek: '0987654321', atas: 'Ali Nursery' },
-  { bank: 'BRI',     norek: '1122334455', atas: 'Ali Nursery' },
+  { bank: 'BCA',     norek: '1234567890', atas: 'H. Ali Nursery' },
+  { bank: 'Mandiri', norek: '0987654321', atas: 'H. Ali Nursery' },
+  { bank: 'BRI',     norek: '1122334455', atas: 'H. Ali Nursery' },
 ];
 
 // ─── Upload Box Component ─────────────────────────────────────────────────────
@@ -154,7 +154,7 @@ function UploadProof({ orderNumber, existingProof, onSuccess }) {
 
       {success && (
         <div className="alert alert-success" style={{ marginTop: 10, fontSize: '13px' }}>
-          ✅ Bukti transfer berhasil dikirim! Admin akan memverifikasi dalam 1×24 jam.
+          Bukti transfer berhasil dikirim! Admin akan memverifikasi dalam 1×24 jam.
         </div>
       )}
     </div>
@@ -210,14 +210,9 @@ export default function PaymentInfo() {
       {/* ── Success header ── */}
       <div style={{ textAlign: 'center', marginBottom: 30 }}>
         <div style={{
-          width: 64, height: 64, margin: '0 auto 14px',
-          background: isPaid ? 'var(--green-dim)' : '#fef9c3',
-          border: `1.5px solid ${isPaid ? 'var(--green)' : '#fde047'}`,
-          borderRadius: '50%',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: '1.6rem',
+        
         }}>
-          {isPaid ? '✅' : '🧾'}
+          
         </div>
         <h1 style={{
           fontFamily: 'var(--font-display)',
@@ -317,7 +312,7 @@ export default function PaymentInfo() {
           </div>
 
           <div className="alert alert-warn" style={{ marginTop: 12 }}>
-            ⚠ Transfer nominal tepat sesuai tagihan. Jangan ada angka lebih/kurang.
+            Transfer nominal tepat sesuai tagihan dan jangan lupa cek kembali.
           </div>
         </div>
       )}
@@ -326,12 +321,7 @@ export default function PaymentInfo() {
       {!isPaid && (
         <div className="card" style={{ marginBottom: 12 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-            <div style={{
-              width: 30, height: 30, borderRadius: 8,
-              background: 'var(--green-dim)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: '15px', flexShrink: 0,
-            }}>📋</div>
+           
             <div>
               <div style={{ fontWeight: 700, fontSize: '14px', color: 'var(--text)' }}>Upload Bukti Transfer</div>
               <div style={{ fontSize: '12px', color: 'var(--muted)' }}>
@@ -352,7 +342,7 @@ export default function PaymentInfo() {
       {isPaid && (
         <div className="alert alert-success" style={{ marginBottom: 12, padding: '16px' }}>
           <div>
-            <div style={{ fontWeight: 700, marginBottom: 3 }}>✅ Pembayaran dikonfirmasi</div>
+            <div style={{ fontWeight: 700, marginBottom: 3 }}> Pembayaran dikonfirmasi</div>
             <div style={{ fontSize: '12.5px' }}>
               Pesananmu sudah diverifikasi admin dan sedang diproses.
             </div>
@@ -369,7 +359,7 @@ export default function PaymentInfo() {
             className="btn btn-primary btn-lg"
             style={{ flex: 2, textDecoration: 'none' }}
           >
-            💬 Konfirmasi via WA
+             Konfirmasi via WA
           </a>
         )}
         <button
@@ -377,7 +367,7 @@ export default function PaymentInfo() {
           style={{ flex: isPaid ? undefined : 1 }}
           onClick={() => navigate(`/track?orderNumber=${order.order_number}`)}
         >
-          📦 Lacak Pesanan
+          Lacak Pesanan
         </button>
       </div>
     </div>

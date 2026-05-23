@@ -3,7 +3,6 @@ const pool = require('../config/database');
 // ─── Dashboard Stats ─────────────────────────────────────────────────────────
 exports.getDashboardStats = async (req, res) => {
   try {
-    // Query order stats — defensive: fallback jika tabel kosong
     const [[orderStats]] = await pool.query(`
       SELECT
         COUNT(*)                                                          AS total_orders,
@@ -18,26 +17,19 @@ exports.getDashboardStats = async (req, res) => {
       FROM orders
     `);
 
-    // Query product stats
     const [[productStats]] = await pool.query(`
       SELECT
-        COUNT(*)                                                                    AS total_products,
-        COALESCE(SUM(stock_quantity = 0),                               0)         AS out_of_stock,
-        COALESCE(SUM(stock_quantity > 0 AND stock_quantity <= 3),       0)         AS low_stock
+        COUNT(*)                                                     AS total_products,
+        COALESCE(SUM(stock_quantity = 0),                       0)  AS out_of_stock,
+        COALESCE(SUM(stock_quantity > 0 AND stock_quantity <= 3), 0) AS low_stock
       FROM products
       WHERE is_active = 1
     `);
 
-    // Recent orders — ambil phone_number dengan alias aman
     const [recentOrders] = await pool.query(`
       SELECT
-        o.id,
-        o.order_number,
-        o.order_date,
-        o.order_status,
-        o.payment_status,
-        o.total_price,
-        c.name           AS customer_name,
+        o.id, o.order_number, o.order_date, o.order_status, o.payment_status, o.total_price,
+        c.name AS customer_name,
         COALESCE(c.phone_number, '-') AS phone_number
       FROM orders o
       JOIN customers c ON o.customer_id = c.id
@@ -45,13 +37,10 @@ exports.getDashboardStats = async (req, res) => {
       LIMIT 10
     `);
 
-    // Top products
     const [topProducts] = await pool.query(`
-      SELECT
-        p.name,
-        p.image_url,
-        SUM(oi.quantity)               AS total_sold,
-        SUM(oi.subtotal)               AS revenue
+      SELECT p.name, p.image_url,
+        SUM(oi.quantity) AS total_sold,
+        SUM(oi.subtotal) AS revenue
       FROM order_items oi
       JOIN products p ON oi.product_id = p.id
       JOIN orders   o ON oi.order_id   = o.id
@@ -61,17 +50,10 @@ exports.getDashboardStats = async (req, res) => {
       LIMIT 5
     `);
 
-    return res.json({
-      success: true,
-      data: { orderStats, productStats, recentOrders, topProducts }
-    });
-
+    return res.json({ success: true, data: { orderStats, productStats, recentOrders, topProducts } });
   } catch (error) {
     console.error('❌ getDashboardStats error:', error.sqlMessage || error.message);
-    return res.status(500).json({
-      success: false,
-      message: 'Gagal mengambil statistik: ' + (error.sqlMessage || error.message)
-    });
+    return res.status(500).json({ success: false, message: 'Gagal mengambil statistik: ' + (error.sqlMessage || error.message) });
   }
 };
 
@@ -81,87 +63,66 @@ exports.getSalesReport = async (req, res) => {
     const { year } = req.query;
     const targetYear = year || new Date().getFullYear();
 
-    // Penjualan per bulan (revenue & jumlah order)
     const [monthlySales] = await pool.query(`
       SELECT
-        MONTH(o.order_date)                                           AS month,
-        MONTHNAME(o.order_date)                                       AS month_name,
-        COUNT(o.id)                                                   AS total_orders,
+        MONTH(o.order_date) AS month,
+        MONTHNAME(o.order_date) AS month_name,
+        COUNT(o.id) AS total_orders,
         COALESCE(SUM(CASE WHEN o.payment_status='paid' THEN o.total_price ELSE 0 END), 0) AS revenue,
-        COALESCE(SUM(o.total_price), 0)                              AS gross_sales
+        COALESCE(SUM(o.total_price), 0) AS gross_sales
       FROM orders o
-      WHERE YEAR(o.order_date) = ?
-        AND o.order_status != 'cancelled'
+      WHERE YEAR(o.order_date) = ? AND o.order_status != 'cancelled'
       GROUP BY MONTH(o.order_date), MONTHNAME(o.order_date)
       ORDER BY MONTH(o.order_date)
     `, [targetYear]);
 
-    // Top tanaman terlaris
     const [topPlants] = await pool.query(`
-      SELECT
-        p.name,
-        COALESCE(p.image_url, NULL)  AS image_url,
-        c.name                         AS category_name,
-        SUM(oi.quantity)               AS total_sold,
-        SUM(oi.subtotal)               AS revenue,
-        COUNT(DISTINCT oi.order_id)    AS order_count
+      SELECT p.name, p.image_url, c.name AS category_name,
+        SUM(oi.quantity) AS total_sold,
+        SUM(oi.subtotal) AS revenue,
+        COUNT(DISTINCT oi.order_id) AS order_count
       FROM order_items oi
       JOIN products p   ON oi.product_id = p.id
       JOIN categories c ON p.category_id = c.id
       JOIN orders o     ON oi.order_id   = o.id
-      WHERE YEAR(o.order_date) = ?
-        AND o.order_status != 'cancelled'
+      WHERE YEAR(o.order_date) = ? AND o.order_status != 'cancelled'
       GROUP BY p.id, p.name, p.image_url, c.name
       ORDER BY total_sold DESC
       LIMIT 10
     `, [targetYear]);
 
-    // Penjualan per kategori
     const [categorySales] = await pool.query(`
-      SELECT
-        c.name                           AS category_name,
-        COALESCE(c.icon, '🌿')          AS icon,
-        SUM(oi.quantity)                 AS total_sold,
-        SUM(oi.subtotal)                 AS revenue
+      SELECT c.name AS category_name, c.icon,
+        SUM(oi.quantity) AS total_sold,
+        SUM(oi.subtotal) AS revenue
       FROM order_items oi
       JOIN products p   ON oi.product_id = p.id
       JOIN categories c ON p.category_id = c.id
       JOIN orders o     ON oi.order_id   = o.id
-      WHERE YEAR(o.order_date) = ?
-        AND o.order_status != 'cancelled'
+      WHERE YEAR(o.order_date) = ? AND o.order_status != 'cancelled'
       GROUP BY c.id, c.name, c.icon
       ORDER BY revenue DESC
     `, [targetYear]);
 
-    // Ringkasan tahunan
     const [[summary]] = await pool.query(`
       SELECT
-        COUNT(o.id)                                                                       AS total_orders,
+        COUNT(o.id) AS total_orders,
         COALESCE(SUM(CASE WHEN o.payment_status='paid' THEN o.total_price ELSE 0 END),0) AS total_revenue,
-        COALESCE(SUM(oi.quantity), 0)                                                     AS total_items_sold,
-        COUNT(DISTINCT o.customer_id)                                                     AS unique_customers
+        COALESCE(SUM(oi.quantity), 0) AS total_items_sold,
+        COUNT(DISTINCT o.customer_id) AS unique_customers
       FROM orders o
       LEFT JOIN order_items oi ON o.id = oi.order_id
-      WHERE YEAR(o.order_date) = ?
-        AND o.order_status != 'cancelled'
+      WHERE YEAR(o.order_date) = ? AND o.order_status != 'cancelled'
     `, [targetYear]);
 
-    // Daftar tahun yang tersedia
-    const [availableYears] = await pool.query(`
-      SELECT DISTINCT YEAR(order_date) AS year FROM orders ORDER BY year DESC
-    `);
+    const [availableYears] = await pool.query(
+      'SELECT DISTINCT YEAR(order_date) AS year FROM orders ORDER BY year DESC'
+    );
 
-    return res.json({
-      success: true,
-      data: { monthlySales, topPlants, categorySales, summary, targetYear, availableYears }
-    });
-
+    return res.json({ success: true, data: { monthlySales, topPlants, categorySales, summary, targetYear, availableYears } });
   } catch (error) {
     console.error('❌ getSalesReport error:', error.sqlMessage || error.message);
-    return res.status(500).json({
-      success: false,
-      message: 'Gagal mengambil laporan penjualan: ' + (error.sqlMessage || error.message)
-    });
+    return res.status(500).json({ success: false, message: 'Gagal mengambil laporan penjualan: ' + (error.sqlMessage || error.message) });
   }
 };
 
@@ -171,9 +132,8 @@ exports.getAllOrders = async (req, res) => {
     const { status, payment, search, page = 1, limit = 20 } = req.query;
     const offset = (Number(page) - 1) * Number(limit);
 
-    let where  = 'WHERE 1=1';
+    let where = 'WHERE 1=1';
     const params = [];
-
     if (status)  { where += ' AND o.order_status = ?';   params.push(status); }
     if (payment) { where += ' AND o.payment_status = ?'; params.push(payment); }
     if (search)  {
@@ -186,13 +146,10 @@ exports.getAllOrders = async (req, res) => {
       `SELECT COUNT(*) AS total FROM orders o JOIN customers c ON o.customer_id = c.id ${where}`,
       params
     );
-
     const [orders] = await pool.query(
-      `SELECT
-         o.*,
-         c.name                           AS customer_name,
-         COALESCE(c.phone_number, '-')    AS phone_number,
-         COALESCE(c.email, '-')           AS email
+      `SELECT o.*, c.name AS customer_name,
+         COALESCE(c.phone_number, '-') AS phone_number,
+         COALESCE(c.email, '-') AS email
        FROM orders o
        JOIN customers c ON o.customer_id = c.id
        ${where}
@@ -201,20 +158,10 @@ exports.getAllOrders = async (req, res) => {
       [...params, Number(limit), offset]
     );
 
-    return res.json({
-      success: true,
-      data: orders,
-      total,
-      page: Number(page),
-      limit: Number(limit)
-    });
-
+    return res.json({ success: true, data: orders, total, page: Number(page), limit: Number(limit) });
   } catch (error) {
     console.error('❌ getAllOrders error:', error.sqlMessage || error.message);
-    return res.status(500).json({
-      success: false,
-      message: 'Gagal mengambil data pesanan: ' + (error.sqlMessage || error.message)
-    });
+    return res.status(500).json({ success: false, message: 'Gagal mengambil data pesanan: ' + (error.sqlMessage || error.message) });
   }
 };
 
@@ -222,203 +169,131 @@ exports.getAllOrders = async (req, res) => {
 exports.getOrderDetail = async (req, res) => {
   try {
     const { id } = req.params;
-
     const [[order]] = await pool.query(
-      `SELECT
-         o.*,
-         c.name                         AS customer_name,
-         COALESCE(c.phone_number, '-')  AS phone_number,
-         COALESCE(c.email, '-')         AS email,
-         COALESCE(c.address, '-')       AS customer_address
-       FROM orders o
-       JOIN customers c ON o.customer_id = c.id
-       WHERE o.id = ?`,
+      `SELECT o.*, c.name AS customer_name,
+         COALESCE(c.phone_number, '-') AS phone_number,
+         COALESCE(c.email, '-') AS email,
+         COALESCE(c.address, '-') AS customer_address
+       FROM orders o JOIN customers c ON o.customer_id = c.id WHERE o.id = ?`,
       [id]
     );
-
-    if (!order) {
-      return res.status(404).json({ success: false, message: 'Pesanan tidak ditemukan' });
-    }
+    if (!order) return res.status(404).json({ success: false, message: 'Pesanan tidak ditemukan' });
 
     const [items] = await pool.query(
-      `SELECT oi.*, p.name AS product_name, COALESCE(p.image_emoji,'🌿') AS image_emoji
-       FROM order_items oi
-       JOIN products p ON oi.product_id = p.id
-       WHERE oi.order_id = ?`,
+      `SELECT oi.*, p.name AS product_name FROM order_items oi
+       JOIN products p ON oi.product_id = p.id WHERE oi.order_id = ?`,
       [id]
     );
+    const [[payment]] = await pool.query('SELECT * FROM payment_records WHERE order_id = ?', [id]);
 
-    const [[payment]] = await pool.query(
-      'SELECT * FROM payment_records WHERE order_id = ?', [id]
-    );
-
-    return res.json({
-      success: true,
-      data: { ...order, items, payment: payment || null }
-    });
-
+    return res.json({ success: true, data: { ...order, items, payment: payment || null } });
   } catch (error) {
     console.error('❌ getOrderDetail error:', error.sqlMessage || error.message);
-    return res.status(500).json({
-      success: false,
-      message: 'Gagal mengambil detail pesanan: ' + (error.sqlMessage || error.message)
-    });
+    return res.status(500).json({ success: false, message: 'Gagal mengambil detail pesanan: ' + (error.sqlMessage || error.message) });
   }
 };
 
 // ─── Update Status Pesanan ───────────────────────────────────────────────────
 exports.updateOrderStatus = async (req, res) => {
-  const { id }           = req.params;
+  const { id } = req.params;
   const { order_status } = req.body;
-
   const validStatuses = ['pending','confirmed','processing','shipped','delivered','cancelled'];
   if (!validStatuses.includes(order_status)) {
     return res.status(400).json({ success: false, message: 'Status tidak valid' });
   }
-
   const connection = await pool.getConnection();
   try {
     await connection.beginTransaction();
-
     const [[order]] = await connection.query('SELECT * FROM orders WHERE id = ?', [id]);
     if (!order) throw new Error('Pesanan tidak ditemukan');
-
     if (order_status === 'cancelled' && order.order_status !== 'cancelled') {
-      const [items] = await connection.query(
-        'SELECT * FROM order_items WHERE order_id = ?', [id]
-      );
+      const [items] = await connection.query('SELECT * FROM order_items WHERE order_id = ?', [id]);
       for (const item of items) {
-        const [[product]] = await connection.query(
-          'SELECT stock_quantity FROM products WHERE id = ?', [item.product_id]
-        );
+        const [[product]] = await connection.query('SELECT stock_quantity FROM products WHERE id = ?', [item.product_id]);
         if (!product) continue;
         const newStock = (product.stock_quantity || 0) + item.quantity;
+        await connection.query('UPDATE products SET stock_quantity = ? WHERE id = ?', [newStock, item.product_id]);
         await connection.query(
-          'UPDATE products SET stock_quantity = ? WHERE id = ?', [newStock, item.product_id]
-        );
-        await connection.query(
-          `INSERT INTO inventory_log
-             (product_id, change_type, quantity_change, quantity_before, quantity_after, reference_id, notes)
+          `INSERT INTO inventory_log (product_id, change_type, quantity_change, quantity_before, quantity_after, reference_id, notes)
            VALUES (?, 'cancelled', ?, ?, ?, ?, ?)`,
-          [item.product_id, item.quantity, product.stock_quantity, newStock, id,
-           `Cancel order ${order.order_number}`]
+          [item.product_id, item.quantity, product.stock_quantity, newStock, id, `Cancel order ${order.order_number}`]
         );
       }
     }
-
     await connection.query('UPDATE orders SET order_status = ? WHERE id = ?', [order_status, id]);
     await connection.commit();
-
     return res.json({ success: true, message: `Status diupdate ke "${order_status}"` });
-
   } catch (error) {
     await connection.rollback();
     console.error('❌ updateOrderStatus error:', error.message);
     return res.status(400).json({ success: false, message: error.message });
-  } finally {
-    connection.release();
-  }
+  } finally { connection.release(); }
 };
 
 // ─── Konfirmasi Pembayaran ───────────────────────────────────────────────────
 exports.confirmPayment = async (req, res) => {
-  const { id }                       = req.params;
-  const { payment_method, notes }    = req.body;
-
+  const { id } = req.params;
+  const { payment_method, notes } = req.body;
   const connection = await pool.getConnection();
   try {
     await connection.beginTransaction();
-
     const [[order]] = await connection.query('SELECT * FROM orders WHERE id = ?', [id]);
-    if (!order)                         throw new Error('Pesanan tidak ditemukan');
+    if (!order) throw new Error('Pesanan tidak ditemukan');
     if (order.payment_status === 'paid') throw new Error('Pembayaran sudah dikonfirmasi');
-
     await connection.query(
-      `UPDATE payment_records
-         SET payment_status = 'paid',
-             amount_paid    = ?,
-             payment_method = ?,
-             paid_at        = NOW(),
-             notes          = ?
-       WHERE order_id = ?`,
+      `UPDATE payment_records SET payment_status='paid', amount_paid=?, payment_method=?, paid_at=NOW(), notes=? WHERE order_id=?`,
       [order.total_price, payment_method || 'transfer', notes || null, id]
     );
-
     await connection.query(
-      `UPDATE orders
-         SET payment_status = 'paid',
-             order_status   = IF(order_status = 'pending', 'confirmed', order_status)
-       WHERE id = ?`,
+      `UPDATE orders SET payment_status='paid', order_status=IF(order_status='pending','confirmed',order_status) WHERE id=?`,
       [id]
     );
-
     await connection.commit();
     return res.json({ success: true, message: 'Pembayaran berhasil dikonfirmasi' });
-
   } catch (error) {
     await connection.rollback();
     console.error('❌ confirmPayment error:', error.message);
     return res.status(400).json({ success: false, message: error.message });
-  } finally {
-    connection.release();
-  }
+  } finally { connection.release(); }
 };
 
-// ─── Tolak Pembayaran ───────────────────────────────────────────────────────
+// ─── Tolak Pembayaran ────────────────────────────────────────────────────────
 exports.rejectPayment = async (req, res) => {
-  const { id }     = req.params;
+  const { id } = req.params;
   const { reason } = req.body;
-
   const connection = await pool.getConnection();
   try {
     await connection.beginTransaction();
-
     const [[order]] = await connection.query('SELECT * FROM orders WHERE id = ?', [id]);
-    if (!order)                            throw new Error('Pesanan tidak ditemukan');
+    if (!order) throw new Error('Pesanan tidak ditemukan');
     if (order.payment_status === 'paid')   throw new Error('Pembayaran sudah dikonfirmasi, tidak bisa ditolak');
     if (order.payment_status === 'failed') throw new Error('Pembayaran sudah pernah ditolak');
-
     await connection.query(
-      `UPDATE payment_records SET payment_status = 'failed', notes = ? WHERE order_id = ?`,
+      `UPDATE payment_records SET payment_status='failed', notes=? WHERE order_id=?`,
       [reason || 'Pembayaran ditolak oleh admin', id]
     );
-
     await connection.query(
-      `UPDATE orders SET payment_status = 'failed', order_status = 'cancelled' WHERE id = ?`,
-      [id]
+      `UPDATE orders SET payment_status='failed', order_status='cancelled' WHERE id=?`, [id]
     );
-
-    const [items] = await connection.query(
-      'SELECT * FROM order_items WHERE order_id = ?', [id]
-    );
+    const [items] = await connection.query('SELECT * FROM order_items WHERE order_id = ?', [id]);
     for (const item of items) {
-      const [[product]] = await connection.query(
-        'SELECT stock_quantity FROM products WHERE id = ?', [item.product_id]
-      );
+      const [[product]] = await connection.query('SELECT stock_quantity FROM products WHERE id = ?', [item.product_id]);
       if (!product) continue;
       const newStock = (product.stock_quantity || 0) + item.quantity;
+      await connection.query('UPDATE products SET stock_quantity = ? WHERE id = ?', [newStock, item.product_id]);
       await connection.query(
-        'UPDATE products SET stock_quantity = ? WHERE id = ?', [newStock, item.product_id]
-      );
-      await connection.query(
-        `INSERT INTO inventory_log
-           (product_id, change_type, quantity_change, quantity_before, quantity_after, reference_id, notes)
+        `INSERT INTO inventory_log (product_id, change_type, quantity_change, quantity_before, quantity_after, reference_id, notes)
          VALUES (?, 'cancelled', ?, ?, ?, ?, ?)`,
-        [item.product_id, item.quantity, product.stock_quantity, newStock, id,
-         `Reject payment order ${order.order_number}`]
+        [item.product_id, item.quantity, product.stock_quantity, newStock, id, `Reject payment order ${order.order_number}`]
       );
     }
-
     await connection.commit();
     return res.json({ success: true, message: 'Pembayaran berhasil ditolak dan pesanan dibatalkan' });
-
   } catch (error) {
     await connection.rollback();
     console.error('❌ rejectPayment error:', error.message);
     return res.status(400).json({ success: false, message: error.message });
-  } finally {
-    connection.release();
-  }
+  } finally { connection.release(); }
 };
 
 // ─── Produk: Get All (Admin) ─────────────────────────────────────────────────
@@ -430,13 +305,14 @@ exports.getAllProducts = async (req, res) => {
              c.name AS category_name
       FROM products p
       JOIN categories c ON p.category_id = c.id
+      WHERE p.is_active = 1
       ORDER BY p.created_at DESC
     `);
     const [categories] = await pool.query('SELECT * FROM categories ORDER BY name');
     return res.json({ success: true, data: products, categories });
   } catch (error) {
     console.error('❌ getAllProducts error:', error.sqlMessage || error.message);
-    return res.status(500).json({ success: false, message: 'Gagal mengambil produk' });
+    return res.status(500).json({ success: false, message: 'Gagal mengambil produk: ' + (error.sqlMessage || error.message) });
   }
 };
 
@@ -444,13 +320,9 @@ exports.getAllProducts = async (req, res) => {
 exports.uploadProductImage = async (req, res) => {
   const { id } = req.params;
   try {
-    if (!req.file) {
-      return res.status(400).json({ success: false, message: 'Tidak ada file yang diupload' });
-    }
+    if (!req.file) return res.status(400).json({ success: false, message: 'Tidak ada file yang diupload' });
     const [[product]] = await pool.query('SELECT id FROM products WHERE id = ?', [id]);
-    if (!product) {
-      return res.status(404).json({ success: false, message: 'Produk tidak ditemukan' });
-    }
+    if (!product) return res.status(404).json({ success: false, message: 'Produk tidak ditemukan' });
     const imageUrl = `/api/product-images/${req.file.filename}`;
     await pool.query('UPDATE products SET image_url = ? WHERE id = ?', [imageUrl, id]);
     return res.json({ success: true, message: 'Foto berhasil diupload', image_url: imageUrl });
@@ -462,21 +334,17 @@ exports.uploadProductImage = async (req, res) => {
 
 // ─── Produk: Tambah ──────────────────────────────────────────────────────────
 exports.createProduct = async (req, res) => {
-  const { category_id, name, description, care_instructions, price, stock_quantity, image_emoji } = req.body;
+  const { category_id, name, description, care_instructions, price, stock_quantity } = req.body;
   if (!category_id || !name || !price) {
     return res.status(400).json({ success: false, message: 'category_id, name, dan price wajib diisi' });
   }
   try {
     const [result] = await pool.query(
-      `INSERT INTO products
-         (category_id, name, description, care_instructions, price, stock_quantity, image_emoji)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [category_id, name, description || null, care_instructions || null,
-       price, stock_quantity || 0, image_emoji || '🌿']
+      `INSERT INTO products (category_id, name, description, care_instructions, price, stock_quantity)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [category_id, name, description || null, care_instructions || null, price, stock_quantity || 0]
     );
-    return res.status(201).json({
-      success: true, message: 'Produk berhasil ditambahkan', id: result.insertId
-    });
+    return res.status(201).json({ success: true, message: 'Produk berhasil ditambahkan', id: result.insertId });
   } catch (error) {
     console.error('❌ createProduct error:', error.sqlMessage || error.message);
     return res.status(500).json({ success: false, message: 'Gagal menambah produk' });
@@ -486,8 +354,7 @@ exports.createProduct = async (req, res) => {
 // ─── Produk: Update ──────────────────────────────────────────────────────────
 exports.updateProduct = async (req, res) => {
   const { id } = req.params;
-  const { category_id, name, description, care_instructions,
-          price, stock_quantity, image_emoji, is_active } = req.body;
+  const { category_id, name, description, care_instructions, price, stock_quantity, is_active } = req.body;
   try {
     const [[existing]] = await pool.query('SELECT * FROM products WHERE id = ?', [id]);
     if (!existing) return res.status(404).json({ success: false, message: 'Produk tidak ditemukan' });
@@ -495,13 +362,11 @@ exports.updateProduct = async (req, res) => {
     if (stock_quantity !== undefined && Number(stock_quantity) !== Number(existing.stock_quantity)) {
       const diff = Number(stock_quantity) - Number(existing.stock_quantity || 0);
       await pool.query(
-        `INSERT INTO inventory_log
-           (product_id, change_type, quantity_change, quantity_before, quantity_after, notes)
+        `INSERT INTO inventory_log (product_id, change_type, quantity_change, quantity_before, quantity_after, notes)
          VALUES (?, 'adjustment', ?, ?, ?, 'Manual adjustment by admin')`,
         [id, diff, existing.stock_quantity || 0, stock_quantity]
       );
     }
-
     await pool.query(
       `UPDATE products SET
          category_id       = COALESCE(?, category_id),
@@ -510,14 +375,12 @@ exports.updateProduct = async (req, res) => {
          care_instructions = COALESCE(?, care_instructions),
          price             = COALESCE(?, price),
          stock_quantity    = COALESCE(?, stock_quantity),
-         image_emoji       = COALESCE(?, image_emoji),
          is_active         = COALESCE(?, is_active)
        WHERE id = ?`,
       [category_id ?? null, name ?? null, description ?? null, care_instructions ?? null,
-       price ?? null, stock_quantity ?? null, image_emoji ?? null,
+       price ?? null, stock_quantity ?? null,
        is_active !== undefined ? is_active : null, id]
     );
-
     return res.json({ success: true, message: 'Produk berhasil diupdate' });
   } catch (error) {
     console.error('❌ updateProduct error:', error.sqlMessage || error.message);
@@ -527,12 +390,37 @@ exports.updateProduct = async (req, res) => {
 
 // ─── Produk: Delete (soft) ───────────────────────────────────────────────────
 exports.deleteProduct = async (req, res) => {
+  const numId = Number(req.params.id);
+  if (!numId || isNaN(numId)) {
+    return res.status(400).json({ success: false, message: 'ID produk tidak valid' });
+  }
   try {
-    await pool.query('UPDATE products SET is_active = 0 WHERE id = ?', [req.params.id]);
-    return res.json({ success: true, message: 'Produk berhasil dihapus' });
+    // Cek keberadaan produk tanpa filter is_active (agar bisa detect sudah dihapus)
+    const [[existing]] = await pool.query(
+      'SELECT id, name, is_active FROM products WHERE id = ?', [numId]
+    );
+    if (!existing) {
+      return res.status(404).json({ success: false, message: 'Produk tidak ditemukan' });
+    }
+    if (Number(existing.is_active) === 0) {
+      return res.status(409).json({ success: false, message: 'Produk sudah dihapus sebelumnya' });
+    }
+
+    // Soft delete — set is_active = 0
+    await pool.query('UPDATE products SET is_active = 0 WHERE id = ?', [numId]);
+
+    // Verifikasi benar-benar tersimpan di DB
+    const [[check]] = await pool.query('SELECT is_active FROM products WHERE id = ?', [numId]);
+    if (!check || Number(check.is_active) !== 0) {
+      console.error('❌ deleteProduct: UPDATE tidak tersimpan untuk id=', numId);
+      return res.status(500).json({ success: false, message: 'Hapus gagal tersimpan di database, coba lagi' });
+    }
+
+    console.log(`✅ Produk id=${numId} "${existing.name}" berhasil dihapus`);
+    return res.json({ success: true, message: `Produk "${existing.name}" berhasil dihapus`, id: numId });
   } catch (error) {
-    console.error('❌ deleteProduct error:', error.message);
-    return res.status(500).json({ success: false, message: 'Gagal hapus produk' });
+    console.error('❌ deleteProduct error:', error.sqlMessage || error.message);
+    return res.status(500).json({ success: false, message: 'Gagal hapus produk: ' + (error.sqlMessage || error.message) });
   }
 };
 
@@ -543,8 +431,7 @@ exports.getCategories = async (req, res) => {
       SELECT c.*, COUNT(p.id) AS product_count
       FROM categories c
       LEFT JOIN products p ON p.category_id = c.id AND p.is_active = 1
-      GROUP BY c.id
-      ORDER BY c.name
+      GROUP BY c.id ORDER BY c.name
     `);
     return res.json({ success: true, data: cats });
   } catch (error) {
@@ -553,24 +440,19 @@ exports.getCategories = async (req, res) => {
   }
 };
 
-// ─── Category: Tambah ─────────────────────────────────────────────────────────
+// ─── Category: Tambah ────────────────────────────────────────────────────────
 exports.createCategory = async (req, res) => {
   const { name, description, icon } = req.body;
-  if (!name || !name.trim()) {
-    return res.status(400).json({ success: false, message: 'Nama kategori wajib diisi' });
-  }
+  if (!name || !name.trim()) return res.status(400).json({ success: false, message: 'Nama kategori wajib diisi' });
   try {
     const [[existing]] = await pool.query('SELECT id FROM categories WHERE name = ?', [name.trim()]);
-    if (existing) {
-      return res.status(409).json({ success: false, message: `Kategori "${name}" sudah ada` });
-    }
+    if (existing) return res.status(409).json({ success: false, message: `Kategori "${name}" sudah ada` });
     const [result] = await pool.query(
       'INSERT INTO categories (name, description, icon) VALUES (?, ?, ?)',
       [name.trim(), description || null, icon || null]
     );
     return res.status(201).json({
-      success: true,
-      message: 'Kategori berhasil ditambahkan',
+      success: true, message: 'Kategori berhasil ditambahkan',
       data: { id: result.insertId, name: name.trim(), description: description || null, icon: icon || null }
     });
   } catch (error) {
@@ -579,26 +461,18 @@ exports.createCategory = async (req, res) => {
   }
 };
 
-// ─── Category: Update ─────────────────────────────────────────────────────────
+// ─── Category: Update ────────────────────────────────────────────────────────
 exports.updateCategory = async (req, res) => {
   const { id } = req.params;
   const { name, description, icon } = req.body;
-  if (!name || !name.trim()) {
-    return res.status(400).json({ success: false, message: 'Nama kategori wajib diisi' });
-  }
+  if (!name || !name.trim()) return res.status(400).json({ success: false, message: 'Nama kategori wajib diisi' });
   try {
     const [[existing]] = await pool.query('SELECT id FROM categories WHERE id = ?', [id]);
-    if (!existing) {
-      return res.status(404).json({ success: false, message: 'Kategori tidak ditemukan' });
-    }
+    if (!existing) return res.status(404).json({ success: false, message: 'Kategori tidak ditemukan' });
     const [[dupName]] = await pool.query('SELECT id FROM categories WHERE name = ? AND id != ?', [name.trim(), id]);
-    if (dupName) {
-      return res.status(409).json({ success: false, message: `Nama kategori "${name}" sudah dipakai` });
-    }
-    await pool.query(
-      'UPDATE categories SET name = ?, description = ?, icon = ? WHERE id = ?',
-      [name.trim(), description || null, icon || null, id]
-    );
+    if (dupName) return res.status(409).json({ success: false, message: `Nama kategori "${name}" sudah dipakai` });
+    await pool.query('UPDATE categories SET name = ?, description = ?, icon = ? WHERE id = ?',
+      [name.trim(), description || null, icon || null, id]);
     return res.json({ success: true, message: 'Kategori berhasil diupdate' });
   } catch (error) {
     console.error('❌ updateCategory error:', error.sqlMessage || error.message);
@@ -606,23 +480,18 @@ exports.updateCategory = async (req, res) => {
   }
 };
 
-// ─── Category: Delete ─────────────────────────────────────────────────────────
+// ─── Category: Delete ────────────────────────────────────────────────────────
 exports.deleteCategory = async (req, res) => {
   const { id } = req.params;
   try {
     const [[existing]] = await pool.query('SELECT id FROM categories WHERE id = ?', [id]);
-    if (!existing) {
-      return res.status(404).json({ success: false, message: 'Kategori tidak ditemukan' });
-    }
+    if (!existing) return res.status(404).json({ success: false, message: 'Kategori tidak ditemukan' });
     const [[{ count }]] = await pool.query(
       'SELECT COUNT(*) AS count FROM products WHERE category_id = ? AND is_active = 1', [id]
     );
-    if (count > 0) {
-      return res.status(409).json({
-        success: false,
-        message: `Tidak bisa hapus: masih ada ${count} produk aktif di kategori ini`
-      });
-    }
+    if (count > 0) return res.status(409).json({
+      success: false, message: `Tidak bisa hapus: masih ada ${count} produk aktif di kategori ini`
+    });
     await pool.query('DELETE FROM categories WHERE id = ?', [id]);
     return res.json({ success: true, message: 'Kategori berhasil dihapus' });
   } catch (error) {

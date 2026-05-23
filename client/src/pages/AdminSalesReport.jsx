@@ -191,7 +191,7 @@ export default function AdminSalesReport() {
               fontWeight: 700, marginBottom: 3, color: 'var(--text)',
             }}>Laporan Penjualan</h1>
             <p style={{ color: 'var(--muted)', fontSize: '13px' }}>
-              Analisis penjualan & produk terlaris Ali Nursery
+              Analisis penjualan & produk terlaris H. Ali Nursery
             </p>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

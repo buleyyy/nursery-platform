@@ -1,5 +1,5 @@
 -- ╔══════════════════════════════════════════════════════════════╗
--- ║  Ali Nursery — Database Migration Fix                        ║
+-- ║  H. Ali Nursery — Database Migration Fix                        ║
 -- ║  Jalankan jika ada error "Unknown column 'phone_number'"     ║
 -- ║  mysql -u root -p nursery_db < migration_fix.sql             ║
 -- ╚══════════════════════════════════════════════════════════════╝

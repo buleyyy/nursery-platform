@@ -1,15 +1,29 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useLocation } from 'react-router-dom';
 import { api, rupiah, statusLabel, statusBadge } from '../utils/api';
 
 const ORDER_STATUSES = ['pending','confirmed','processing','shipped','delivered','cancelled'];
 
 export default function AdminOrders() {
+  const location = useLocation();
   const [orders,   setOrders]   = useState([]);
   const [total,    setTotal]    = useState(0);
   const [loading,  setLoading]  = useState(true);
-  const [selected, setSelected] = useState(null); // detail modal
-  const [filters,  setFilters]  = useState({ status: '', payment: '', search: '', page: 1 });
-  const [updating, setUpdating] = useState(null); // order id being updated
+  const [selected, setSelected] = useState(null);
+  const [updating, setUpdating] = useState(null);
+
+  // Baca query params dari URL (shortcut dari dashboard)
+  const urlParams = new URLSearchParams(location.search);
+  const initStatus  = urlParams.get('status')  || '';
+  const initPayment = urlParams.get('payment') || '';
+
+  const [filters, setFilters] = useState({ status: initStatus, payment: initPayment, search: '', page: 1 });
+
+  // Kalau navigasi dari dashboard dengan query params berbeda, update filter
+  useEffect(() => {
+    const p = new URLSearchParams(location.search);
+    setFilters(f => ({ ...f, status: p.get('status') || '', payment: p.get('payment') || '', page: 1 }));
+  }, [location.search]);
 
   const loadOrders = useCallback(async () => {
     setLoading(true);
@@ -209,16 +223,21 @@ export default function AdminOrders() {
               </div>
             </div>
 
-            {/* Status update */}
-            <div className="form-group">
-              <label className="form-label">Update Status Pesanan</label>
-              <select className="select"
-                value={selected.order_status}
-                onChange={(e) => handleUpdateStatus(selected.id, e.target.value)}>
-                {ORDER_STATUSES.map(s => (
-                  <option key={s} value={s}>{statusLabel[s]}</option>
-                ))}
-              </select>
+            {/* Status — read-only di modal detail, ubah hanya lewat kolom tabel */}
+            <div style={{ marginTop: 4 }}>
+              <div style={{ fontWeight: 600, fontSize: '11px', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8 }}>STATUS PESANAN</div>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                <span className={statusBadge(selected.order_status)} style={{ fontSize: '12.5px', padding: '5px 14px' }}>
+                  {statusLabel[selected.order_status]}
+                </span>
+                <span style={{ color: 'var(--muted)', fontSize: '12px' }}>—</span>
+                <span className={statusBadge(selected.payment_status)} style={{ fontSize: '12.5px', padding: '5px 14px' }}>
+                  {statusLabel[selected.payment_status]}
+                </span>
+              </div>
+              <p style={{ fontSize: '11.5px', color: 'var(--muted)', marginTop: 8 }}>
+                Untuk mengubah status, gunakan dropdown di kolom tabel.
+              </p>
             </div>
           </div>
         </div>

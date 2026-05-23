@@ -14,13 +14,57 @@ const IC = {
   cancel:   <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="7" stroke="currentColor" strokeWidth="1.5"/><path d="M6.5 6.5l5 5M11.5 6.5l-5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>,
 };
 
-const StatCard = ({ icon, label, value, color, bg, accent }) => (
-  <div className="stat-card" style={{ borderLeft: `3px solid ${accent || 'transparent'}` }}>
-    <div className="stat-icon" style={{ background: bg, color }}>{icon}</div>
-    <div>
-      <div className="stat-label">{label}</div>
-      <div className="stat-value" style={{ color }}>{value}</div>
-    </div>
+// StatCard — shortcut button dengan layout bersih
+const StatCard = ({ icon, label, value, color, bg, accent, onClick, isRupiah }) => (
+  <div
+    className="stat-card"
+    onClick={onClick}
+    style={{
+      borderLeft: `3px solid ${accent || 'transparent'}`,
+      cursor: onClick ? 'pointer' : 'default',
+      userSelect: 'none',
+      position: 'relative',
+      flexDirection: isRupiah ? 'row' : 'row',
+      alignItems: isRupiah ? 'center' : 'center',
+    }}
+    onMouseEnter={e => { if (onClick) { e.currentTarget.style.transform='translateY(-2px)'; e.currentTarget.style.boxShadow='0 6px 20px rgba(0,0,0,0.09)'; }}}
+    onMouseLeave={e => { if (onClick) { e.currentTarget.style.transform=''; e.currentTarget.style.boxShadow=''; }}}
+  >
+    {/* Icon box */}
+    <div className="stat-icon" style={{ background: bg, color, flexShrink: 0 }}>{icon}</div>
+
+    {isRupiah ? (
+      /* Rupiah: label di atas, nominal di bawah — stacked, tapi compact */
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div className="stat-label">{label}</div>
+        <div style={{
+          fontFamily: 'var(--font-display)',
+          fontSize: '1.1rem',
+          fontWeight: 700,
+          color,
+          lineHeight: 1.2,
+          marginTop: 2,
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+        }}>{value}</div>
+      </div>
+    ) : (
+      /* Angka biasa: label + angka besar */
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div className="stat-label">{label}</div>
+        <div className="stat-value" style={{ color }}>{value}</div>
+      </div>
+    )}
+
+    {/* Arrow hint */}
+    {onClick && (
+      <div style={{ color: 'var(--muted)', opacity: 0.5, flexShrink: 0, paddingLeft: 4 }}>
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+          <path d="M4.5 2.5L8 6l-3.5 3.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      </div>
+    )}
   </div>
 );
 
@@ -84,7 +128,7 @@ export default function AdminDashboard() {
             <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '1.9rem', fontWeight: 700, marginBottom: 3 }}>
               Dashboard
             </h1>
-            <p style={{ color: 'var(--muted)', fontSize: '13px' }}>Ringkasan operasional Ali Nursery</p>
+            <p style={{ color: 'var(--muted)', fontSize: '13px' }}>Ringkasan operasional H. Ali Nursery</p>
           </div>
           <button className="btn btn-outline btn-sm" onClick={loadStats}>↻ Refresh</button>
         </div>
@@ -92,14 +136,14 @@ export default function AdminDashboard() {
 
       {/* Stats Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12, marginBottom: 26 }}>
-        <StatCard icon={IC.orders}  label="Total Pesanan" value={safeNum(o.total_orders)}       color="var(--text)"    bg="var(--elevated)"   accent="var(--border-2)" />
-        <StatCard icon={IC.revenue} label="Total Revenue"  value={rupiah(o.total_revenue || 0)} color="var(--green)"   bg="var(--green-dim)"  accent="var(--green-2)" />
-        <StatCard icon={IC.pending} label="Menunggu"        value={safeNum(o.pending)}            color="var(--warn)"    bg="var(--warn-dim)"   accent="var(--warn)" />
-        <StatCard icon={IC.done}    label="Selesai"          value={safeNum(o.delivered)}          color="var(--green)"   bg="var(--green-dim)"  accent="var(--green)" />
-        <StatCard icon={IC.plant}   label="Total Produk"    value={safeNum(p.total_products)}     color="var(--text)"    bg="var(--elevated)"   accent="var(--border-2)" />
-        <StatCard icon={IC.warn}    label="Stok Menipis"    value={safeNum(p.low_stock)}          color="var(--warn)"    bg="var(--warn-dim)"   accent="var(--warn)" />
-        <StatCard icon={IC.unpaid}  label="Belum Dibayar"   value={rupiah(o.pending_payment||0)}  color="var(--warn)"    bg="var(--warn-dim)"   accent="var(--warn)" />
-        <StatCard icon={IC.cancel}  label="Dibatalkan"      value={safeNum(o.cancelled)}          color="var(--danger)"  bg="var(--danger-dim)" accent="var(--danger)" />
+        <StatCard icon={IC.orders}  label="Total Pesanan" value={safeNum(o.total_orders)}      color="var(--text)"   bg="var(--elevated)"   accent="var(--border-2)" onClick={() => navigate('/admin/orders')} />
+        <StatCard icon={IC.revenue} label="Total Revenue"  value={rupiah(o.total_revenue || 0)} color="var(--green)"  bg="var(--green-dim)"  accent="var(--green-2)" onClick={() => navigate('/admin/orders?payment=paid')} isRupiah />
+        <StatCard icon={IC.pending} label="Menunggu"        value={safeNum(o.pending)}           color="var(--warn)"   bg="var(--warn-dim)"   accent="var(--warn)"    onClick={() => navigate('/admin/orders?status=pending')} />
+        <StatCard icon={IC.done}    label="Selesai"          value={safeNum(o.delivered)}         color="var(--green)"  bg="var(--green-dim)"  accent="var(--green)"   onClick={() => navigate('/admin/orders?status=delivered')} />
+        <StatCard icon={IC.plant}   label="Total Produk"    value={safeNum(p.total_products)}    color="var(--text)"   bg="var(--elevated)"   accent="var(--border-2)" onClick={() => navigate('/admin/products')} />
+        <StatCard icon={IC.warn}    label="Stok Menipis"    value={safeNum(p.low_stock)}         color="var(--warn)"   bg="var(--warn-dim)"   accent="var(--warn)"    onClick={() => navigate('/admin/products')} />
+        <StatCard icon={IC.unpaid}  label="Belum Dibayar"   value={rupiah(o.pending_payment||0)} color="var(--warn)"   bg="var(--warn-dim)"   accent="var(--warn)"    onClick={() => navigate('/admin/orders?payment=pending')} isRupiah />
+        <StatCard icon={IC.cancel}  label="Dibatalkan"      value={safeNum(o.cancelled)}         color="var(--danger)" bg="var(--danger-dim)" accent="var(--danger)"  onClick={() => navigate('/admin/orders?status=cancelled')} />
       </div>
 
       {/* Mid section */}

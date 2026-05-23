@@ -1,4 +1,4 @@
-# 🌿 Ali Nursery Platform
+# 🌿 H. Ali Nursery Platform
 
 Platform manajemen pesanan online untuk UMKM penjualan tanaman hias.
 

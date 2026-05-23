@@ -62,7 +62,7 @@ function ConfirmModal({ order, proof, onConfirm, onClose, onPreview }) {
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 18 }}>
           <div>
-            <h2 style={{ fontSize: '1.05rem', marginBottom: 3 }}>✅ Konfirmasi Pembayaran</h2>
+            <h2 style={{ fontSize: '1.05rem', marginBottom: 3 }}> Konfirmasi Pembayaran</h2>
             <div style={{ fontSize: '12.5px', color: 'var(--muted)', fontFamily: 'var(--font-mono)' }}>{order.order_number}</div>
           </div>
           <button className="btn btn-ghost btn-sm" style={{ padding: '4px 8px', fontSize: '16px' }} onClick={onClose}>✕</button>
@@ -77,7 +77,7 @@ function ConfirmModal({ order, proof, onConfirm, onClose, onPreview }) {
               <img src={imgUrl} alt="Bukti" style={{ width: '100%', maxHeight: 180, objectFit: 'contain', display: 'block', background: '#f5f9f5' }} />
             </div>
             <div className="alert alert-success" style={{ marginTop: 8, padding: '7px 12px', fontSize: '12.5px' }}>
-              ✅ Bukti sudah diupload customer — klik gambar untuk perbesar
+              Bukti sudah diupload customer — klik gambar untuk perbesar
             </div>
           </div>
         ) : (
@@ -173,7 +173,7 @@ function RejectModal({ order, proof, onReject, onClose, onPreview }) {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 18 }}>
               <div>
                 <h2 style={{ fontSize: '1.05rem', marginBottom: 3, color: 'var(--danger)' }}>
-                  ❌ Tolak Pembayaran
+                  Tolak Pembayaran
                 </h2>
                 <div style={{ fontSize: '12.5px', color: 'var(--muted)', fontFamily: 'var(--font-mono)' }}>{order.order_number}</div>
               </div>
@@ -358,14 +358,14 @@ export default function AdminPayments() {
   const handleConfirm = async (id, form) => {
     await api.confirmPayment(id, form);
     setConfirmOrder(null);
-    showToast('✅ Pembayaran berhasil dikonfirmasi');
+    showToast('Pembayaran berhasil dikonfirmasi');
     loadPending();
   };
 
   const handleReject = async (id, body) => {
     await api.rejectPayment(id, body);
     setRejectOrder(null);
-    showToast('❌ Pembayaran ditolak dan pesanan dibatalkan', 'danger');
+    showToast('Pembayaran ditolak dan pesanan dibatalkan', 'danger');
     loadPending();
   };
 
@@ -410,7 +410,7 @@ export default function AdminPayments() {
         </div>
       ) : orders.length === 0 ? (
         <div className="card" style={{ textAlign: 'center', padding: '60px 20px' }}>
-          <div className="empty-icon">✅</div>
+          <div className="empty-icon"></div>
           <h3 style={{ marginBottom: 6 }}>Tidak ada yang perlu diverifikasi</h3>
           <p style={{ color: 'var(--muted)', fontSize: '13px' }}>Semua pembayaran sudah ditangani.</p>
         </div>
@@ -486,7 +486,7 @@ export default function AdminPayments() {
                         </button>
                       ) : (
                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: '11.5px', color: 'var(--warn)', fontWeight: 600 }}>
-                          ⏳ Belum
+                          Belum
                         </span>
                       )}
                     </td>
