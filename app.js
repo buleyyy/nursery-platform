@@ -42,7 +42,7 @@ const PORT = process.env.PORT || 3006;
 
 app.listen(PORT, async () => {
   console.log(`\n╔════════════════════════════════════════╗`);
-  console.log(`║  🌿 H. Ali Nursery API v2.0               ║`);
+  console.log(`║  🌿 H. Ali Nursery API v2.0            ║`);
   console.log(`║  http://localhost:${PORT}                 ║`);
   console.log(`╠════════════════════════════════════════╣`);
   console.log(`║  POST  /api/auth/login                 ║`);
