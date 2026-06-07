@@ -2,7 +2,19 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api, cart, rupiah } from '../utils/api';
 
-const BASE = 'http://localhost:3006';
+// ─── Badge warna ID produk  ─────────────────
+const BADGE_PALETTE = [
+  { bg: '#fdf4ff', color: '#9333ea', border: '#e9d5ff' },
+  { bg: '#eff6ff', color: '#2563eb', border: '#bfdbfe' },
+  { bg: '#fef3c7', color: '#b45309', border: '#fde68a' },
+  { bg: '#f0fdf4', color: '#16a34a', border: '#bbf7d0' },
+  { bg: '#fff1f2', color: '#e11d48', border: '#fecdd3' },
+  { bg: '#fff7ed', color: '#ea580c', border: '#fed7aa' },
+  { bg: '#ecfdf5', color: '#059669', border: '#a7f3d0' },
+  { bg: '#f0f9ff', color: '#0284c7', border: '#bae6fd' },
+];
+const getBadgeColor = (categoryId) =>
+  BADGE_PALETTE[(Math.max(0, Number(categoryId) - 1)) % BADGE_PALETTE.length];
 
 export default function ProductDetail() {
   const { id } = useParams();
@@ -79,7 +91,7 @@ export default function ProductDetail() {
         }}>
           {product.image_url ? (
             <img
-              src={`${BASE}${product.image_url}`}
+              src={product.image_url}
               alt={product.name}
               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
               onError={(e) => { e.target.style.display = 'none'; }}
@@ -96,14 +108,30 @@ export default function ProductDetail() {
 
         {/* Info */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <span style={{
-            display: 'inline-block', width: 'fit-content',
-            background: 'var(--green-dim)', color: 'var(--green-2)',
-            padding: '4px 12px', borderRadius: 999,
-            fontSize: '12px', fontWeight: 600,
-          }}>
-            {product.category_name}
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <span style={{
+              display: 'inline-block',
+              background: 'var(--green-dim)', color: 'var(--green-2)',
+              padding: '4px 12px', borderRadius: 999,
+              fontSize: '12px', fontWeight: 600,
+            }}>
+              {product.category_name}
+            </span>
+            {(() => {
+              const badge = getBadgeColor(product.category_id);
+              const code  = product.product_code || `#${String(product.id).padStart(3, '0')}`;
+              return (
+                <span style={{
+                  display: 'inline-flex', alignItems: 'center',
+                  padding: '3px 10px', borderRadius: 999,
+                  fontSize: 11.5, fontWeight: 700, fontFamily: 'var(--font-mono)',
+                  background: badge.bg, color: badge.color,
+                  border: `1px solid ${badge.border}`,
+                  letterSpacing: '0.03em',
+                }}>{code}</span>
+              );
+            })()}
+          </div>
 
           <h1 style={{ fontSize: '1.7rem', lineHeight: 1.2 }}>{product.name}</h1>
 

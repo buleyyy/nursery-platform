@@ -69,10 +69,13 @@ async function runMigrations() {
     await renameCol('products', 'perawatan', 'care_instructions', 'TEXT');
     await addCol('products', 'stock_quantity',    'INT NOT NULL DEFAULT 0');
     await addCol('products', 'image_emoji',       "VARCHAR(20) DEFAULT '🌿'");
+    await addCol('products', 'image_url',         'VARCHAR(500) DEFAULT NULL');
     await addCol('products', 'is_active',         'TINYINT(1) DEFAULT 1');
     await addCol('products', 'care_instructions', 'TEXT');
     await addCol('products', 'category_id',       'INT NOT NULL DEFAULT 1');
     await addCol('products', 'description',       'TEXT');
+    await addCol('products', 'product_code',      'VARCHAR(50) DEFAULT NULL COMMENT \'Custom product ID/SKU\'');
+    await addCol('products', 'updated_at',        'TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP');
 
     // ── orders ───────────────────────────────────────────────────────────────
     // order_status (nama lama yang umum)

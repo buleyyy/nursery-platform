@@ -2,13 +2,12 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api, cart, rupiah } from '../utils/api';
 
-const BASE = 'http://localhost:3006';
-
+// Gambar produk — pakai proxy Vite sehingga cukup path relatif
 function PlantImage({ product }) {
   if (product?.image_url) {
     return (
       <img
-        src={`${BASE}${product.image_url}`}
+        src={product.image_url}
         alt={product.name}
         style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
         onError={(e) => { e.target.style.display = 'none'; }}
@@ -204,7 +203,15 @@ export default function UserHome() {
                   <PlantImage product={product} />
                 </div>
                 <div className="product-card-body">
-                  <div className="product-card-cat">{product.category_name}</div>
+                  <div className="product-card-cat" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{
+                      fontSize: '10px', fontFamily: 'var(--font-mono)',
+                      color: 'var(--muted)', background: 'var(--elevated)',
+                      border: '1px solid var(--border)',
+                      padding: '1px 5px', borderRadius: 4, lineHeight: 1.6,
+                    }}>#{product.id}</span>
+                    {product.category_name}
+                  </div>
                   <div className="product-card-name">{product.name}</div>
                   <div className={`product-card-stock ${
                     product.stock_quantity === 0 ? 'out' : product.stock_quantity <= 3 ? 'low' : ''

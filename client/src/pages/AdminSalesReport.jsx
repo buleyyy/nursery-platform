@@ -112,22 +112,121 @@ const DonutChart = ({ data, total }) => {
   );
 };
 
+// ─── Data Tables per Period ─────────────────────────────────────────────────
+const MONTHS_ID = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Ags','Sep','Okt','Nov','Des'];
+const fmtDate = (d) => { if (!d) return '-'; const x = new Date(d); return `${String(x.getDate()).padStart(2,'0')} ${MONTHS_ID[x.getMonth()]}`; };
+
+const MonthlyTable = ({ monthly }) => (
+  <table style={{ width:'100%', borderCollapse:'collapse', fontSize:12.5 }}>
+    <thead>
+      <tr style={{ background:'var(--elevated)' }}>
+        {['Bulan','Pesanan','Revenue','Gross Sales','Avg/Pesanan'].map(h => (
+          <th key={h} style={{ padding:'8px 10px', textAlign:h==='Bulan'?'left':'right', fontWeight:700, color:'var(--text-2)', fontSize:11.5, borderBottom:'1px solid var(--border)' }}>{h}</th>
+        ))}
+      </tr>
+    </thead>
+    <tbody>
+      {monthly.map((m, i) => {
+        const avg = m.total_orders > 0 ? m.revenue / m.total_orders : 0;
+        const has = m.total_orders > 0;
+        return (
+          <tr key={i} style={{ borderBottom:'1px solid var(--border)' }}>
+            <td style={{ padding:'8px 10px', fontWeight:has?600:400, color:has?'var(--text)':'var(--muted)' }}>{MONTHS_ID[i]}</td>
+            <td style={{ padding:'8px 10px', textAlign:'right', fontFamily:'var(--font-mono)', color:has?'var(--info)':'var(--muted)' }}>{has?m.total_orders:'—'}</td>
+            <td style={{ padding:'8px 10px', textAlign:'right', fontFamily:'var(--font-mono)', color:has?'var(--green)':'var(--muted)', fontWeight:has?700:400 }}>{has?rupiah(m.revenue):'—'}</td>
+            <td style={{ padding:'8px 10px', textAlign:'right', fontFamily:'var(--font-mono)', color:'var(--muted)' }}>{has?rupiah(m.gross_sales):'—'}</td>
+            <td style={{ padding:'8px 10px', textAlign:'right', fontFamily:'var(--font-mono)', color:'var(--muted)' }}>{has?rupiah(avg):'—'}</td>
+          </tr>
+        );
+      })}
+    </tbody>
+    <tfoot>
+      <tr style={{ background:'var(--green-dim)', borderTop:'2px solid var(--green)' }}>
+        <td style={{ padding:'9px 10px', fontWeight:700, color:'var(--green)' }}>TOTAL</td>
+        <td style={{ padding:'9px 10px', textAlign:'right', fontFamily:'var(--font-mono)', fontWeight:700 }}>{monthly.reduce((s,m)=>s+m.total_orders,0)}</td>
+        <td style={{ padding:'9px 10px', textAlign:'right', fontFamily:'var(--font-mono)', fontWeight:700, color:'var(--green)' }}>{rupiah(monthly.reduce((s,m)=>s+m.revenue,0))}</td>
+        <td style={{ padding:'9px 10px', textAlign:'right', fontFamily:'var(--font-mono)', color:'var(--muted)' }}>{rupiah(monthly.reduce((s,m)=>s+m.gross_sales,0))}</td>
+        <td style={{ padding:'9px 10px', textAlign:'right', color:'var(--muted)', fontSize:11 }}>—</td>
+      </tr>
+    </tfoot>
+  </table>
+);
+
+const WeeklyTable = ({ weekly }) => {
+  if (!weekly || weekly.length === 0) return <p style={{ textAlign:'center', color:'var(--muted)', padding:'20px 0', fontSize:13 }}>Belum ada data mingguan</p>;
+  return (
+    <table style={{ width:'100%', borderCollapse:'collapse', fontSize:12.5 }}>
+      <thead>
+        <tr style={{ background:'var(--elevated)' }}>
+          {['Minggu','Periode','Pesanan','Revenue','Gross Sales'].map(h => (
+            <th key={h} style={{ padding:'8px 10px', textAlign:(h==='Minggu'||h==='Periode')?'left':'right', fontWeight:700, color:'var(--text-2)', fontSize:11.5, borderBottom:'1px solid var(--border)' }}>{h}</th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {weekly.map((w, i) => (
+          <tr key={i} style={{ borderBottom:'1px solid var(--border)' }}>
+            <td style={{ padding:'8px 10px', fontWeight:600, fontFamily:'var(--font-mono)' }}>W{w.week_num} '{String(w.year||'').slice(-2)}</td>
+            <td style={{ padding:'8px 10px', color:'var(--muted)', fontSize:12 }}>{fmtDate(w.week_start)} – {fmtDate(w.week_end)}</td>
+            <td style={{ padding:'8px 10px', textAlign:'right', fontFamily:'var(--font-mono)', color:'var(--info)' }}>{w.total_orders}</td>
+            <td style={{ padding:'8px 10px', textAlign:'right', fontFamily:'var(--font-mono)', color:'var(--green)', fontWeight:700 }}>{rupiah(w.revenue)}</td>
+            <td style={{ padding:'8px 10px', textAlign:'right', fontFamily:'var(--font-mono)', color:'var(--muted)' }}>{rupiah(w.gross_sales)}</td>
+          </tr>
+        ))}
+      </tbody>
+      <tfoot>
+        <tr style={{ background:'var(--green-dim)', borderTop:'2px solid var(--green)' }}>
+          <td colSpan={2} style={{ padding:'9px 10px', fontWeight:700, color:'var(--green)' }}>TOTAL ({weekly.length} minggu)</td>
+          <td style={{ padding:'9px 10px', textAlign:'right', fontFamily:'var(--font-mono)', fontWeight:700 }}>{weekly.reduce((s,w)=>s+Number(w.total_orders),0)}</td>
+          <td style={{ padding:'9px 10px', textAlign:'right', fontFamily:'var(--font-mono)', fontWeight:700, color:'var(--green)' }}>{rupiah(weekly.reduce((s,w)=>s+Number(w.revenue),0))}</td>
+          <td style={{ padding:'9px 10px', textAlign:'right', fontFamily:'var(--font-mono)', color:'var(--muted)' }}>{rupiah(weekly.reduce((s,w)=>s+Number(w.gross_sales),0))}</td>
+        </tr>
+      </tfoot>
+    </table>
+  );
+};
+
+const YearlyTable = ({ yearly }) => {
+  if (!yearly || yearly.length === 0) return <p style={{ textAlign:'center', color:'var(--muted)', padding:'20px 0', fontSize:13 }}>Belum ada data tahunan</p>;
+  return (
+    <table style={{ width:'100%', borderCollapse:'collapse', fontSize:12.5 }}>
+      <thead>
+        <tr style={{ background:'var(--elevated)' }}>
+          {['Tahun','Pesanan','Revenue','Gross Sales'].map(h => (
+            <th key={h} style={{ padding:'8px 10px', textAlign:h==='Tahun'?'left':'right', fontWeight:700, color:'var(--text-2)', fontSize:11.5, borderBottom:'1px solid var(--border)' }}>{h}</th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {yearly.map((y, i) => (
+          <tr key={i} style={{ borderBottom:'1px solid var(--border)', background:i%2===0?'transparent':'var(--elevated)' }}>
+            <td style={{ padding:'8px 10px', fontWeight:700, fontSize:14, fontFamily:'var(--font-mono)' }}>{y.year}</td>
+            <td style={{ padding:'8px 10px', textAlign:'right', fontFamily:'var(--font-mono)', color:'var(--info)' }}>{y.total_orders}</td>
+            <td style={{ padding:'8px 10px', textAlign:'right', fontFamily:'var(--font-mono)', color:'var(--green)', fontWeight:700 }}>{rupiah(y.revenue)}</td>
+            <td style={{ padding:'8px 10px', textAlign:'right', fontFamily:'var(--font-mono)', color:'var(--muted)' }}>{rupiah(y.gross_sales)}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+};
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function AdminSalesReport() {
-  const [data, setData]         = useState(null);
-  const [loading, setLoading]   = useState(true);
-  const [error, setError]       = useState(null);
-  const [year, setYear]         = useState(new Date().getFullYear());
-  const [chartMode, setChartMode] = useState('revenue'); // 'revenue' | 'orders'
+  const [data, setData]           = useState(null);
+  const [loading, setLoading]     = useState(true);
+  const [error, setError]         = useState(null);
+  const [year, setYear]           = useState(new Date().getFullYear());
+  const [period, setPeriod]       = useState('monthly'); // 'weekly' | 'monthly' | 'yearly'
+  const [chartMode, setChartMode] = useState('revenue');
+  const [exporting, setExporting] = useState(false);
 
-  const MONTHS_ID = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Ags','Sep','Okt','Nov','Des'];
-
-  useEffect(() => { loadReport(); }, [year]);
+  useEffect(() => { loadReport(); }, [year, period]);
 
   const loadReport = async () => {
     setLoading(true); setError(null);
     try {
-      const res = await api.salesReport(year);
+      const res = await api.salesReport(year, period);
       setData(res.data);
     } catch (e) {
       setError(e.message || 'Gagal memuat laporan');
@@ -152,6 +251,82 @@ export default function AdminSalesReport() {
     return base;
   };
 
+  const getWeeklyData = () => (data?.periodData || []).map(w => ({
+    ...w,
+    week_label: `W${w.week_num}`,
+    revenue: Number(w.revenue), total_orders: Number(w.total_orders), gross_sales: Number(w.gross_sales),
+  }));
+
+  const getYearlyData = () => (data?.periodData || []).map(y => ({
+    ...y,
+    year_label: String(y.year),
+    revenue: Number(y.revenue), total_orders: Number(y.total_orders),
+  }));
+
+  const handleExport = () => {
+    setExporting(true);
+    try {
+      const periodLabel = period === 'weekly' ? 'Per Minggu (12 Minggu Terakhir)' :
+                          period === 'yearly' ? 'Per Tahun' : `Per Bulan — ${year}`;
+      const mData = getMonthlyData();
+      const wData = getWeeklyData();
+      const yData = getYearlyData();
+      const cList = data?.categorySales || [];
+      const cTotal = cList.reduce((s,c)=>s+Number(c.revenue||0),0);
+      const rows = [];
+      rows.push(['Laporan Penjualan H. Ali Nursery']);
+      rows.push([`Periode: ${periodLabel}`]);
+      rows.push([`Diekspor: ${new Date().toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'})}`]);
+      rows.push([]);
+      rows.push(['=== RINGKASAN ===']);
+      rows.push(['Metric','Nilai']);
+      rows.push(['Total Revenue (Rp)', String(summary?.total_revenue||0)]);
+      rows.push(['Total Pesanan',      String(summary?.total_orders||0)]);
+      rows.push(['Item Terjual',       String(summary?.total_items_sold||0)]);
+      rows.push(['Pelanggan Unik',     String(summary?.unique_customers||0)]);
+      rows.push([]);
+      if (period === 'monthly') {
+        rows.push(['=== DATA PENJUALAN BULANAN ===']);
+        rows.push(['Bulan','Pesanan','Revenue (Rp)','Gross Sales (Rp)','Avg/Pesanan (Rp)']);
+        mData.forEach(m => {
+          const avg = m.total_orders > 0 ? Math.round(m.revenue/m.total_orders) : 0;
+          rows.push([m.month_name, String(m.total_orders||0), String(m.revenue||0), String(m.gross_sales||0), String(avg)]);
+        });
+        rows.push(['TOTAL', String(mData.reduce((s,m)=>s+m.total_orders,0)), String(mData.reduce((s,m)=>s+m.revenue,0)), String(mData.reduce((s,m)=>s+m.gross_sales,0)), '']);
+      } else if (period === 'weekly') {
+        rows.push(['=== DATA PENJUALAN MINGGUAN ===']);
+        rows.push(['Minggu','Periode','Pesanan','Revenue (Rp)','Gross Sales (Rp)']);
+        wData.forEach(w => rows.push([`W${w.week_num} '${String(w.year||'').slice(-2)}`, `${fmtDate(w.week_start)} - ${fmtDate(w.week_end)}`, String(w.total_orders), String(w.revenue), String(w.gross_sales)]));
+      } else {
+        rows.push(['=== DATA PENJUALAN TAHUNAN ===']);
+        rows.push(['Tahun','Pesanan','Revenue (Rp)','Gross Sales (Rp)']);
+        yData.forEach(y => rows.push([String(y.year), String(y.total_orders), String(y.revenue), String(y.gross_sales)]));
+      }
+      rows.push([]);
+      if ((data?.topPlants||[]).length > 0) {
+        rows.push(['=== TOP PRODUK ===']);
+        rows.push(['No','Nama Produk','Kategori','Unit Terjual','Revenue (Rp)','Pesanan']);
+        (data?.topPlants||[]).forEach((p,i) => rows.push([String(i+1),p.name,p.category_name,String(p.total_sold),String(p.revenue),String(p.order_count)]));
+        rows.push([]);
+      }
+      if (cList.length > 0) {
+        rows.push(['=== PENJUALAN PER KATEGORI ===']);
+        rows.push(['Kategori','Unit Terjual','Revenue (Rp)','Persentase']);
+        cList.forEach(c => {
+          const pct = cTotal > 0 ? Math.round(Number(c.revenue)/cTotal*100) : 0;
+          rows.push([c.category_name, String(c.total_sold), String(c.revenue), `${pct}%`]);
+        });
+      }
+      const bom = '\uFEFF';
+      const csv = bom + rows.map(row => row.map(cell => `"${String(cell??'').replace(/"/g,'""')}"`).join(',')).join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url;
+      a.download = `laporan-penjualan-${period}-${year}.csv`; a.click();
+      URL.revokeObjectURL(url);
+    } finally { setExporting(false); }
+  };
+
   if (loading) return (
     <div className="loading-page">
       <div className="spinner" />
@@ -170,14 +345,24 @@ export default function AdminSalesReport() {
   );
 
   const monthly   = getMonthlyData();
+  const weekly    = getWeeklyData();
+  const yearly    = getYearlyData();
   const summary   = data?.summary       || {};
   const topPlants = data?.topPlants     || [];
   const catSales  = data?.categorySales || [];
   const catTotal  = catSales.reduce((s, c) => s + Number(c.revenue || 0), 0);
   const years     = data?.availableYears?.map(y => y.year) || [new Date().getFullYear()];
 
-  const maxRevMonth = monthly.reduce((max, m) =>
+  const chartData     = period === 'weekly' ? weekly : period === 'yearly' ? yearly : monthly;
+  const chartLabelKey = period === 'weekly' ? 'week_label' : period === 'yearly' ? 'year_label' : 'month_name';
+  const maxRevMonth   = monthly.reduce((max, m) =>
     Number(m.revenue) > Number(max?.revenue || 0) ? m : max, monthly[0]);
+
+  const PERIOD_TABS = [
+    { key: 'weekly',  label: 'Per Minggu' },
+    { key: 'monthly', label: 'Per Bulan'  },
+    { key: 'yearly',  label: 'Per Tahun'  },
+  ];
 
   return (
     <div style={{ padding: '28px 28px 64px' }}>
@@ -194,19 +379,50 @@ export default function AdminSalesReport() {
               Analisis penjualan & produk terlaris H. Ali Nursery
             </p>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <select
-              value={year}
-              onChange={e => setYear(Number(e.target.value))}
-              style={{
-                padding: '7px 12px', borderRadius: 8, fontSize: 13,
-                border: '1.5px solid var(--border)', background: 'var(--surface)',
-                color: 'var(--text)', cursor: 'pointer', fontFamily: 'var(--font-mono)',
-              }}
-            >
-              {years.map(y => <option key={y} value={y}>{y}</option>)}
-            </select>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            {/* Period Tabs */}
+            <div style={{ display:'flex', gap:2, background:'var(--elevated)', borderRadius:10, padding:3, border:'1px solid var(--border)' }}>
+              {PERIOD_TABS.map(tab => (
+                <button key={tab.key} onClick={() => setPeriod(tab.key)} style={{
+                  padding:'5px 13px', borderRadius:8, fontSize:12.5, fontWeight:600,
+                  border:'none', cursor:'pointer', transition:'all 0.15s',
+                  background: period===tab.key ? 'var(--green)' : 'transparent',
+                  color: period===tab.key ? '#fff' : 'var(--text-2)',
+                  boxShadow: period===tab.key ? '0 1px 4px rgba(45,140,78,0.3)' : 'none',
+                  fontFamily: 'var(--font-body)',
+                }}>{tab.label}</button>
+              ))}
+            </div>
+            {/* Year selector only for monthly */}
+            {period === 'monthly' && (
+              <select value={year} onChange={e => setYear(Number(e.target.value))} style={{
+                padding:'7px 12px', borderRadius:8, fontSize:13,
+                border:'1.5px solid var(--border)', background:'var(--surface)',
+                color:'var(--text)', cursor:'pointer', fontFamily:'var(--font-mono)',
+              }}>
+                {years.map(y => <option key={y} value={y}>{y}</option>)}
+              </select>
+            )}
             <button className="btn btn-outline btn-sm" onClick={loadReport}>↻ Refresh</button>
+            {/* Export CSV */}
+            <button
+              onClick={handleExport} disabled={exporting}
+              style={{
+                display:'inline-flex', alignItems:'center', gap:6,
+                padding:'7px 14px', borderRadius:8, fontSize:12.5, fontWeight:700,
+                border:'1.5px solid var(--green)', background:'var(--green-dim)',
+                color:'var(--green)', cursor:'pointer', transition:'all 0.15s',
+                fontFamily:'var(--font-body)', opacity: exporting ? 0.7 : 1,
+              }}
+              onMouseEnter={e=>{if(!exporting){e.currentTarget.style.background='var(--green)';e.currentTarget.style.color='#fff';}}}
+              onMouseLeave={e=>{e.currentTarget.style.background='var(--green-dim)';e.currentTarget.style.color='var(--green)';}}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+                <path d="M12 3v13M7 12l5 5 5-5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M3 19h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+              {exporting ? 'Mengekspor...' : 'Export CSV'}
+            </button>
           </div>
         </div>
       </div>
@@ -239,14 +455,20 @@ export default function AdminSalesReport() {
           alignItems: 'center', marginBottom: 20,
         }}>
           <div>
-            <h3 style={{ marginBottom: 3 }}>Penjualan Per Bulan — {year}</h3>
-            {maxRevMonth && Number(maxRevMonth.revenue) > 0 && (
+            <h3 style={{ marginBottom: 3 }}>
+              {period==='weekly' ? 'Penjualan 12 Minggu Terakhir' :
+               period==='yearly' ? 'Perbandingan Penjualan Per Tahun' :
+               `Penjualan Per Bulan — ${year}`}
+            </h3>
+            {period==='monthly' && maxRevMonth && Number(maxRevMonth.revenue) > 0 && (
               <p style={{ fontSize: 12, color: 'var(--muted)' }}>
                 Bulan terbaik: <strong style={{ color: 'var(--green)' }}>
                   {MONTHS_ID[(maxRevMonth.month || 1) - 1]}
                 </strong> ({rupiah(maxRevMonth.revenue)})
               </p>
             )}
+            {period==='weekly' && <p style={{ fontSize:12, color:'var(--muted)' }}>Data 12 minggu terakhir</p>}
+            {period==='yearly' && <p style={{ fontSize:12, color:'var(--muted)' }}>Performa revenue dari tahun ke tahun</p>}
           </div>
           <div style={{ display: 'flex', gap: 6 }}>
             {[
@@ -269,67 +491,17 @@ export default function AdminSalesReport() {
         </div>
 
         <BarChart
-          data={monthly}
+          data={chartData}
           valueKey={chartMode === 'revenue' ? 'revenue' : 'total_orders'}
-          labelKey="month_name"
+          labelKey={chartLabelKey}
           color={chartMode === 'revenue' ? 'var(--green)' : 'var(--info)'}
         />
 
-        {/* Tabel ringkasan bulanan */}
+        {/* Period table */}
         <div style={{ marginTop: 24, overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5 }}>
-            <thead>
-              <tr style={{ background: 'var(--elevated)' }}>
-                {['Bulan','Pesanan','Revenue','Gross Sales','Rata-rata/Pesanan'].map(h => (
-                  <th key={h} style={{
-                    padding: '8px 10px', textAlign: h === 'Bulan' ? 'left' : 'right',
-                    fontWeight: 700, color: 'var(--text-2)', fontSize: 11.5,
-                    borderBottom: '1px solid var(--border)',
-                  }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {monthly.map((m, i) => {
-                const avg     = m.total_orders > 0 ? m.revenue / m.total_orders : 0;
-                const hasData = m.total_orders > 0;
-                return (
-                  <tr key={i} style={{ borderBottom: '1px solid var(--border)' }}>
-                    <td style={{ padding: '8px 10px', fontWeight: hasData ? 600 : 400, color: hasData ? 'var(--text)' : 'var(--muted)' }}>
-                      {MONTHS_ID[i]}
-                    </td>
-                    <td style={{ padding: '8px 10px', textAlign: 'right', fontFamily: 'var(--font-mono)', color: hasData ? 'var(--info)' : 'var(--muted)' }}>
-                      {hasData ? m.total_orders : '—'}
-                    </td>
-                    <td style={{ padding: '8px 10px', textAlign: 'right', fontFamily: 'var(--font-mono)', color: hasData ? 'var(--green)' : 'var(--muted)', fontWeight: hasData ? 700 : 400 }}>
-                      {hasData ? rupiah(m.revenue) : '—'}
-                    </td>
-                    <td style={{ padding: '8px 10px', textAlign: 'right', fontFamily: 'var(--font-mono)', color: 'var(--muted)' }}>
-                      {hasData ? rupiah(m.gross_sales) : '—'}
-                    </td>
-                    <td style={{ padding: '8px 10px', textAlign: 'right', fontFamily: 'var(--font-mono)', color: 'var(--muted)' }}>
-                      {hasData ? rupiah(avg) : '—'}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-            <tfoot>
-              <tr style={{ background: 'var(--green-dim)', borderTop: '2px solid var(--green)' }}>
-                <td style={{ padding: '9px 10px', fontWeight: 700, color: 'var(--green)' }}>TOTAL</td>
-                <td style={{ padding: '9px 10px', textAlign: 'right', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>
-                  {monthly.reduce((s, m) => s + m.total_orders, 0)}
-                </td>
-                <td style={{ padding: '9px 10px', textAlign: 'right', fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--green)' }}>
-                  {rupiah(monthly.reduce((s, m) => s + m.revenue, 0))}
-                </td>
-                <td style={{ padding: '9px 10px', textAlign: 'right', fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--muted)' }}>
-                  {rupiah(monthly.reduce((s, m) => s + m.gross_sales, 0))}
-                </td>
-                <td style={{ padding: '9px 10px', textAlign: 'right', color: 'var(--muted)', fontSize: 11 }}>—</td>
-              </tr>
-            </tfoot>
-          </table>
+          {period === 'monthly' && <MonthlyTable monthly={monthly} />}
+          {period === 'weekly'  && <WeeklyTable  weekly={weekly}   />}
+          {period === 'yearly'  && <YearlyTable  yearly={yearly}   />}
         </div>
       </div>
 
@@ -367,7 +539,7 @@ export default function AdminSalesReport() {
                   </span>
                   <div style={{ width: 24, height: 24, borderRadius: 6, background: 'var(--green-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--green)', flexShrink: 0 }}>
                     {plant.image_url
-                      ? <img src={`http://localhost:3006${plant.image_url}`} alt={plant.name} style={{ width: 24, height: 24, borderRadius: 6, objectFit: 'cover' }} onError={e => { e.target.style.display='none'; }} />
+                      ? <img src={plant.image_url} alt={plant.name} style={{ width: 24, height: 24, borderRadius: 6, objectFit: 'cover' }} onError={e => { e.target.style.display='none'; }} />
                       : <svg viewBox="0 0 24 24" fill="none" width="14" height="14"><path d="M12 3C12 3 6 8 6 13.5a6 6 0 0012 0C18 8 12 3 12 3z" fill="currentColor" opacity=".7"/><path d="M12 13.5V20" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
                     }
                   </div>

@@ -131,7 +131,7 @@ export default function AdminLogin() {
           fontSize: '11.5px', marginTop: 18,
           fontFamily: 'var(--font-mono)',
         }}>
-         
+          H. Ali Nursery &copy; 2026
         </p>
       </div>
     </div>

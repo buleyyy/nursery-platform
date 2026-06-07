@@ -1,5 +1,24 @@
 const pool = require('../config/database');
 
+// ─── Auto-migration helper (runs once per process) ────────────────────────────
+let _productCodeReady = false;
+async function ensureProductCode() {
+  if (_productCodeReady) return;
+  try {
+    await pool.query(
+      `ALTER TABLE products ADD COLUMN product_code VARCHAR(50) DEFAULT NULL COMMENT 'Custom product ID/SKU'`
+    );
+    console.log('[auto-migrate] ✚ Added products.product_code');
+  } catch (_) { /* already exists — ignore */ }
+  try {
+    await pool.query(
+      `ALTER TABLE products ADD COLUMN image_url VARCHAR(500) DEFAULT NULL`
+    );
+    console.log('[auto-migrate] ✚ Added products.image_url');
+  } catch (_) { /* already exists — ignore */ }
+  _productCodeReady = true;
+}
+
 // ─── Dashboard Stats ─────────────────────────────────────────────────────────
 exports.getDashboardStats = async (req, res) => {
   try {
@@ -60,21 +79,58 @@ exports.getDashboardStats = async (req, res) => {
 // ─── Sales Report ─────────────────────────────────────────────────────────────
 exports.getSalesReport = async (req, res) => {
   try {
-    const { year } = req.query;
+    const { year, period = 'monthly' } = req.query;
     const targetYear = year || new Date().getFullYear();
 
-    const [monthlySales] = await pool.query(`
-      SELECT
-        MONTH(o.order_date) AS month,
-        MONTHNAME(o.order_date) AS month_name,
-        COUNT(o.id) AS total_orders,
-        COALESCE(SUM(CASE WHEN o.payment_status='paid' THEN o.total_price ELSE 0 END), 0) AS revenue,
-        COALESCE(SUM(o.total_price), 0) AS gross_sales
-      FROM orders o
-      WHERE YEAR(o.order_date) = ? AND o.order_status != 'cancelled'
-      GROUP BY MONTH(o.order_date), MONTHNAME(o.order_date)
-      ORDER BY MONTH(o.order_date)
-    `, [targetYear]);
+    let periodData = [];
+
+    if (period === 'weekly') {
+      const [rows] = await pool.query(`
+        SELECT
+          YEARWEEK(o.order_date, 1)     AS year_week,
+          WEEK(o.order_date, 1)          AS week_num,
+          YEAR(o.order_date)             AS year,
+          MIN(DATE(o.order_date))        AS week_start,
+          MAX(DATE(o.order_date))        AS week_end,
+          COUNT(o.id)                    AS total_orders,
+          COALESCE(SUM(CASE WHEN o.payment_status='paid' THEN o.total_price ELSE 0 END), 0) AS revenue,
+          COALESCE(SUM(o.total_price), 0) AS gross_sales
+        FROM orders o
+        WHERE o.order_date >= DATE_SUB(NOW(), INTERVAL 12 WEEK)
+          AND o.order_status != 'cancelled'
+        GROUP BY YEARWEEK(o.order_date, 1), WEEK(o.order_date, 1), YEAR(o.order_date)
+        ORDER BY year_week ASC
+      `);
+      periodData = rows;
+    } else if (period === 'yearly') {
+      const [rows] = await pool.query(`
+        SELECT
+          YEAR(o.order_date)             AS year,
+          COUNT(o.id)                    AS total_orders,
+          COALESCE(SUM(CASE WHEN o.payment_status='paid' THEN o.total_price ELSE 0 END), 0) AS revenue,
+          COALESCE(SUM(o.total_price), 0) AS gross_sales,
+          COUNT(DISTINCT o.customer_id)  AS unique_customers
+        FROM orders o
+        WHERE o.order_status != 'cancelled'
+        GROUP BY YEAR(o.order_date)
+        ORDER BY year ASC
+      `);
+      periodData = rows;
+    } else {
+      const [rows] = await pool.query(`
+        SELECT
+          MONTH(o.order_date) AS month,
+          MONTHNAME(o.order_date) AS month_name,
+          COUNT(o.id) AS total_orders,
+          COALESCE(SUM(CASE WHEN o.payment_status='paid' THEN o.total_price ELSE 0 END), 0) AS revenue,
+          COALESCE(SUM(o.total_price), 0) AS gross_sales
+        FROM orders o
+        WHERE YEAR(o.order_date) = ? AND o.order_status != 'cancelled'
+        GROUP BY MONTH(o.order_date), MONTHNAME(o.order_date)
+        ORDER BY MONTH(o.order_date)
+      `, [targetYear]);
+      periodData = rows;
+    }
 
     const [topPlants] = await pool.query(`
       SELECT p.name, p.image_url, c.name AS category_name,
@@ -119,7 +175,10 @@ exports.getSalesReport = async (req, res) => {
       'SELECT DISTINCT YEAR(order_date) AS year FROM orders ORDER BY year DESC'
     );
 
-    return res.json({ success: true, data: { monthlySales, topPlants, categorySales, summary, targetYear, availableYears } });
+    return res.json({
+      success: true,
+      data: { periodData, monthlySales: period === 'monthly' ? periodData : [], topPlants, categorySales, summary, targetYear, availableYears, period }
+    });
   } catch (error) {
     console.error('❌ getSalesReport error:', error.sqlMessage || error.message);
     return res.status(500).json({ success: false, message: 'Gagal mengambil laporan penjualan: ' + (error.sqlMessage || error.message) });
@@ -296,13 +355,36 @@ exports.rejectPayment = async (req, res) => {
   } finally { connection.release(); }
 };
 
+// ─── Helper: pastikan kolom product_code & image_url ada ────────────────────
+let _colsEnsured = false;
+async function ensureProductCols() {
+  if (_colsEnsured) return;
+  const db = process.env.DB_NAME || 'nursery_db';
+  const ensureCol = async (col, def) => {
+    const [[{ n }]] = await pool.query(
+      `SELECT COUNT(*) AS n FROM information_schema.COLUMNS
+       WHERE TABLE_SCHEMA=? AND TABLE_NAME='products' AND COLUMN_NAME=?`,
+      [db, col]
+    );
+    if (n === 0) {
+      await pool.query(`ALTER TABLE products ADD COLUMN \`${col}\` ${def}`);
+      console.log(`  [auto-migrate] ✚ ADD products.${col}`);
+    }
+  };
+  await ensureCol('image_url',    'VARCHAR(500) DEFAULT NULL');
+  await ensureCol('product_code', 'VARCHAR(50)  DEFAULT NULL');
+  await ensureCol('updated_at',   'TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP');
+  _colsEnsured = true;
+}
+
 // ─── Produk: Get All (Admin) ─────────────────────────────────────────────────
 exports.getAllProducts = async (req, res) => {
   try {
+    await ensureProductCols();
     const [products] = await pool.query(`
       SELECT p.id, p.category_id, p.name, p.description, p.care_instructions,
              p.price, p.stock_quantity, p.image_url, p.is_active, p.created_at,
-             c.name AS category_name
+             p.product_code, c.name AS category_name
       FROM products p
       JOIN categories c ON p.category_id = c.id
       WHERE p.is_active = 1
@@ -334,15 +416,16 @@ exports.uploadProductImage = async (req, res) => {
 
 // ─── Produk: Tambah ──────────────────────────────────────────────────────────
 exports.createProduct = async (req, res) => {
-  const { category_id, name, description, care_instructions, price, stock_quantity } = req.body;
+  const { category_id, name, description, care_instructions, price, stock_quantity, product_code } = req.body;
   if (!category_id || !name || !price) {
     return res.status(400).json({ success: false, message: 'category_id, name, dan price wajib diisi' });
   }
   try {
+    const pCode = product_code ? String(product_code).trim() || null : null;
     const [result] = await pool.query(
-      `INSERT INTO products (category_id, name, description, care_instructions, price, stock_quantity)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [category_id, name, description || null, care_instructions || null, price, stock_quantity || 0]
+      `INSERT INTO products (category_id, name, description, care_instructions, price, stock_quantity, product_code)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [category_id, name, description || null, care_instructions || null, price, stock_quantity || 0, pCode]
     );
     return res.status(201).json({ success: true, message: 'Produk berhasil ditambahkan', id: result.insertId });
   } catch (error) {
@@ -354,7 +437,7 @@ exports.createProduct = async (req, res) => {
 // ─── Produk: Update ──────────────────────────────────────────────────────────
 exports.updateProduct = async (req, res) => {
   const { id } = req.params;
-  const { category_id, name, description, care_instructions, price, stock_quantity, is_active } = req.body;
+  const { category_id, name, description, care_instructions, price, stock_quantity, is_active, product_code } = req.body;
   try {
     const [[existing]] = await pool.query('SELECT * FROM products WHERE id = ?', [id]);
     if (!existing) return res.status(404).json({ success: false, message: 'Produk tidak ditemukan' });
@@ -381,6 +464,10 @@ exports.updateProduct = async (req, res) => {
        price ?? null, stock_quantity ?? null,
        is_active !== undefined ? is_active : null, id]
     );
+    if (product_code !== undefined) {
+      const pCode = String(product_code || '').trim() || null;
+      await pool.query('UPDATE products SET product_code = ? WHERE id = ?', [pCode, id]);
+    }
     return res.json({ success: true, message: 'Produk berhasil diupdate' });
   } catch (error) {
     console.error('❌ updateProduct error:', error.sqlMessage || error.message);

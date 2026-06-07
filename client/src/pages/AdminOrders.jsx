@@ -176,6 +176,63 @@ export default function AdminOrders() {
         </div>
       )}
 
+      {/* Pagination */}
+      {!loading && orders.length > 0 && (() => {
+        const limit     = 20;
+        const totalPages = Math.ceil(total / limit);
+        if (totalPages <= 1) return null;
+        return (
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            marginTop: 16, padding: '10px 4px',
+          }}>
+            <span style={{ fontSize: '12.5px', color: 'var(--muted)', fontFamily: 'var(--font-mono)' }}>
+              Halaman {filters.page} dari {totalPages} ({total} pesanan)
+            </span>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button
+                className="btn btn-outline btn-sm"
+                disabled={filters.page <= 1}
+                onClick={() => setFilters(f => ({ ...f, page: f.page - 1 }))}
+              >
+                ← Sebelumnya
+              </button>
+              {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                // Tampilkan max 5 halaman di sekitar current
+                const half  = 2;
+                let start   = Math.max(1, filters.page - half);
+                let end     = Math.min(totalPages, start + 4);
+                start       = Math.max(1, end - 4);
+                const page  = start + i;
+                if (page > totalPages) return null;
+                return (
+                  <button
+                    key={page}
+                    className="btn btn-sm"
+                    style={{
+                      background:   filters.page === page ? 'var(--green)' : 'transparent',
+                      color:        filters.page === page ? '#fff'         : 'var(--text-2)',
+                      border:       filters.page === page ? 'none' : '1.5px solid var(--border)',
+                      minWidth:     32, fontWeight: 600,
+                    }}
+                    onClick={() => setFilters(f => ({ ...f, page }))}
+                  >
+                    {page}
+                  </button>
+                );
+              })}
+              <button
+                className="btn btn-outline btn-sm"
+                disabled={filters.page >= totalPages}
+                onClick={() => setFilters(f => ({ ...f, page: f.page + 1 }))}
+              >
+                Berikutnya →
+              </button>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Detail Modal */}
       {selected && (
         <div className="modal-overlay" onClick={() => setSelected(null)}>

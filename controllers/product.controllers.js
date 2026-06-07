@@ -9,6 +9,7 @@ exports.getAllProducts = async (req, res) => {
       SELECT
         p.id,
         p.category_id,
+        p.product_code,
         p.name,
         p.description,
         p.care_instructions,
@@ -46,7 +47,7 @@ exports.getProductById = async (req, res) => {
 
     const [[product]] = await pool.query(
       `SELECT
-         p.id, p.category_id, p.name, p.description, p.care_instructions,
+         p.id, p.category_id, p.product_code, p.name, p.description, p.care_instructions,
          p.price, COALESCE(p.stock_quantity, 0) AS stock_quantity,
          p.image_url, p.created_at,
          c.name AS category_name

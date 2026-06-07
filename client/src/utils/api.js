@@ -1,5 +1,6 @@
 // Centralized API helper — semua request lewat sini
-const BASE = 'http://localhost:3006/api';
+// BASE kosong = pakai proxy Vite (/api/* → http://localhost:3006/api/*)
+const BASE = '/api';
 
 const getAdminToken = () => localStorage.getItem('adminToken') || '';
 
@@ -71,7 +72,7 @@ export const api = {
     if (!res.ok) throw new Error(data.message || 'Upload foto gagal');
     return data;
   },
-  salesReport:      (year)         => req('GET', `/admin/sales-report?year=${year}`, null, true),
+  salesReport:      (year, period = 'monthly') => req('GET', `/admin/sales-report?year=${year}&period=${period}`, null, true),
 };
 
 // ─── Cart helpers (localStorage) ─────────────────────────────────────────────
@@ -89,7 +90,8 @@ export const cart = {
     } else {
       items.push({
         product_id: product.id, name: product.name,
-        price: product.price, image_emoji: product.image_emoji, quantity,
+        price: product.price, image_url: product.image_url,
+        image_emoji: product.image_emoji, quantity,
       });
     }
     cart.save(items); return items;
@@ -130,5 +132,5 @@ export const statusBadge = (s) => `badge badge-${s}`;
 export const proofUrl = (proofPath) => {
   if (!proofPath) return null;
   const filename = proofPath.split('/').pop();
-  return `http://localhost:3006/api/proof/${filename}`;
+  return `/api/proof/${filename}`;
 };

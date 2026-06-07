@@ -102,9 +102,21 @@ export default function Checkout() {
                     width: 48, height: 48, borderRadius: 10,
                     background: 'linear-gradient(135deg, #e8f5e9, #c8e6c9)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: '1.6rem', flexShrink: 0,
+                    flexShrink: 0, overflow: 'hidden',
                   }}>
-                    {item.image_emoji || '🌿'}
+                    {item.image_url ? (
+                      <img
+                        src={item.image_url}
+                        alt={item.name}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                      />
+                    ) : (
+                      <svg viewBox="0 0 24 24" fill="none" width="28" height="28" style={{ opacity: 0.45, color: 'var(--green)' }}>
+                        <path d="M12 3C12 3 6 8 6 13.5a6 6 0 0012 0C18 8 12 3 12 3z" fill="currentColor"/>
+                        <path d="M12 13.5V20" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                      </svg>
+                    )}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 600, fontSize: '13.5px', color: 'var(--text)' }}>

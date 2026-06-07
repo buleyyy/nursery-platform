@@ -29,3 +29,9 @@ DESCRIBE customers;
 
 -- Tampilkan pesan sukses
 SELECT 'Migration selesai: tabel customers OK' AS status;
+
+-- ─── Tambah product_code ke tabel products ────────────────────────────────────
+ALTER TABLE products
+  ADD COLUMN IF NOT EXISTS product_code VARCHAR(50) DEFAULT NULL AFTER id;
+
+SELECT 'Migration selesai: product_code ditambahkan' AS status;

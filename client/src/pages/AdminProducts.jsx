@@ -1,19 +1,32 @@
 import { useState, useEffect, useRef } from 'react';
 import { api, rupiah } from '../utils/api';
 
-const BASE = 'http://localhost:3006';
+// Gambar produk — cukup path relatif (proxy Vite menghandle /api/*)
 const EMPTY_FORM = {
   name: '', description: '', price: '',
   stock_quantity: '', category_id: '',
-  care_instructions: '',
+  care_instructions: '', product_code: '',
 };
+
+// ─── Badge colours per category ───────────────────────────────────────────────
+const BADGE_PALETTE = [
+  { bg: '#fdf4ff', color: '#9333ea', border: '#e9d5ff' }, // purple
+  { bg: '#eff6ff', color: '#2563eb', border: '#bfdbfe' }, // blue
+  { bg: '#fef3c7', color: '#b45309', border: '#fde68a' }, // amber
+  { bg: '#f0fdf4', color: '#16a34a', border: '#bbf7d0' }, // green
+  { bg: '#fff1f2', color: '#e11d48', border: '#fecdd3' }, // rose
+  { bg: '#fff7ed', color: '#ea580c', border: '#fed7aa' }, // orange
+  { bg: '#ecfdf5', color: '#059669', border: '#a7f3d0' }, // emerald
+  { bg: '#f0f9ff', color: '#0284c7', border: '#bae6fd' }, // sky
+];
+const getBadgeColor = (categoryId) => BADGE_PALETTE[(Math.max(0, Number(categoryId) - 1)) % BADGE_PALETTE.length];
 
 // Helper: tampilkan gambar produk (foto atau fallback daun SVG)
 export function ProductImage({ product, size = 40, style = {} }) {
   if (product?.image_url) {
     return (
       <img
-        src={`${BASE}${product.image_url}`}
+        src={product.image_url}
         alt={product.name}
         style={{ width: size, height: size, borderRadius: 8, objectFit: 'cover', display: 'block', ...style }}
         onError={(e) => { e.target.style.display = 'none'; }}
@@ -98,10 +111,11 @@ export default function AdminProducts() {
       stock_quantity:    product.stock_quantity || '',
       category_id:       product.category_id || '',
       care_instructions: product.care_instructions || '',
+      product_code:      product.product_code || '',
     });
     setSelected(product);
     setImageFile(null);
-    setImagePreview(product.image_url ? `${BASE}${product.image_url}` : null);
+    setImagePreview(product.image_url || null);
     setError(null);
     setModal('edit');
   };
@@ -142,6 +156,7 @@ export default function AdminProducts() {
         price:          Number(form.price),
         stock_quantity: Number(form.stock_quantity),
         category_id:    Number(form.category_id),
+        product_code:   form.product_code.trim() || null,
       };
 
       let productId = selected?.id;
@@ -242,7 +257,7 @@ export default function AdminProducts() {
                 <th>Produk</th>
                 <th>Kategori</th>
                 <th>Harga</th>
-                <th>Stok</th>
+                <th>ID Produk</th>
                 <th></th>
               </tr>
             </thead>
@@ -264,6 +279,19 @@ export default function AdminProducts() {
                               textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                             }}>{product.description}</div>
                           )}
+                          {/* Stock badge */}
+                          <div style={{ marginTop: 3 }}>
+                            <span style={{
+                              fontSize: 10.5, fontWeight: 600, fontFamily: 'var(--font-mono)',
+                              padding: '1px 6px', borderRadius: 4,
+                              color: stockOut ? 'var(--danger)' : stockLow ? 'var(--warn)' : 'var(--muted)',
+                              background: stockOut ? 'var(--danger-dim)' : stockLow ? 'var(--warn-dim)' : 'var(--elevated)',
+                            }}>
+                              📦 {product.stock_quantity} unit
+                              {stockOut && ' · Habis'}
+                              {!stockOut && stockLow && ' · Hampir habis'}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </td>
@@ -278,15 +306,21 @@ export default function AdminProducts() {
                       </span>
                     </td>
                     <td>
-                      <span style={{
-                        fontFamily: 'var(--font-mono)', fontSize: '13px',
-                        color: stockOut ? 'var(--danger)' : stockLow ? 'var(--warn)' : 'var(--text-2)',
-                        fontWeight: stockOut || stockLow ? 600 : 400,
-                      }}>
-                        {product.stock_quantity}
-                        {stockLow && <span style={{ marginLeft: 4, fontSize: 11 }}>▲</span>}
-                      {stockOut && <span style={{ marginLeft: 4, fontSize: 11 }}>✕</span>}
-                      </span>
+                      {/* Colored ID badge */}
+                      {(() => {
+                        const badge = getBadgeColor(product.category_id);
+                        const code = product.product_code || `#${String(product.id).padStart(3,'0')}`;
+                        return (
+                          <span style={{
+                            display: 'inline-flex', alignItems: 'center',
+                            padding: '3px 10px', borderRadius: 999,
+                            fontSize: 11.5, fontWeight: 700, fontFamily: 'var(--font-mono)',
+                            background: badge.bg, color: badge.color,
+                            border: `1px solid ${badge.border}`,
+                            letterSpacing: '0.03em',
+                          }}>{code}</span>
+                        );
+                      })()}
                     </td>
                     <td>
                       <div style={{ display: 'flex', gap: 6 }}>
@@ -413,11 +447,32 @@ export default function AdminProducts() {
                     style={{ fontFamily: 'var(--font-mono)' }} />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Stok *</label>
-                  <input className="input" name="stock_quantity" required type="number" min="0"
-                    placeholder="10" value={form.stock_quantity} onChange={handleChange}
+                  <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    ID Produk
+                    {form.product_code && (() => {
+                      const b = getBadgeColor(form.category_id);
+                      return (
+                        <span style={{
+                          padding: '1px 8px', borderRadius: 999, fontSize: 10.5, fontWeight: 700,
+                          fontFamily: 'var(--font-mono)',
+                          background: b.bg, color: b.color, border: `1px solid ${b.border}`,
+                        }}>{form.product_code}</span>
+                      );
+                    })()}
+                  </label>
+                  <input className="input" name="product_code"
+                    placeholder="Contoh: ANK-001, BONSAI-02"
+                    value={form.product_code} onChange={handleChange}
                     style={{ fontFamily: 'var(--font-mono)' }} />
+                  <span style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>Kode unik produk (opsional)</span>
                 </div>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Stok *</label>
+                <input className="input" name="stock_quantity" required type="number" min="0"
+                  placeholder="10" value={form.stock_quantity} onChange={handleChange}
+                  style={{ fontFamily: 'var(--font-mono)', maxWidth: 180 }} />
               </div>
 
               <div className="form-group">

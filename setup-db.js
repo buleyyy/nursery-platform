@@ -146,6 +146,8 @@ async function setup() {
     await addCol('products', 'stock_quantity',    'INT NOT NULL DEFAULT 0');
     await addCol('products', 'image_emoji',       "VARCHAR(20) DEFAULT '🌿'");
     await addCol('products', 'is_active',         'TINYINT(1) DEFAULT 1');
+    await addCol('products', 'image_url',         'VARCHAR(500) DEFAULT NULL');
+    await addCol('products', 'product_code',      "VARCHAR(50) DEFAULT NULL");
     await addCol('products', 'created_at',        'TIMESTAMP DEFAULT CURRENT_TIMESTAMP');
     console.log('  ✅ products OK');
 

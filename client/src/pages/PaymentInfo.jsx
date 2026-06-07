@@ -210,9 +210,26 @@ export default function PaymentInfo() {
       {/* ── Success header ── */}
       <div style={{ textAlign: 'center', marginBottom: 30 }}>
         <div style={{
-        
+          width: 64, height: 64, margin: '0 auto 16px',
+          borderRadius: '50%',
+          background: isPaid ? 'var(--green-dim)' : '#fff7ed',
+          border: `2px solid ${isPaid ? 'var(--green)' : '#fed7aa'}`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: '2rem',
         }}>
-          
+          {isPaid ? (
+            <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+              <circle cx="14" cy="14" r="13" stroke="var(--green)" strokeWidth="2"/>
+              <path d="M8 14l4 4 8-8" stroke="var(--green)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          ) : (
+            <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+              <rect x="3" y="9" width="22" height="15" rx="2.5" stroke="#ea580c" strokeWidth="2"/>
+              <path d="M3 13h22" stroke="#ea580c" strokeWidth="2"/>
+              <path d="M8 6l-2 3M20 6l2 3" stroke="#ea580c" strokeWidth="2" strokeLinecap="round"/>
+              <rect x="7" y="17" width="5" height="3" rx="1" fill="#ea580c"/>
+            </svg>
+          )}
         </div>
         <h1 style={{
           fontFamily: 'var(--font-display)',
@@ -321,7 +338,16 @@ export default function PaymentInfo() {
       {!isPaid && (
         <div className="card" style={{ marginBottom: 12 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-           
+            <div style={{
+              width: 36, height: 36, borderRadius: 9, flexShrink: 0,
+              background: 'var(--green-dim)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <path d="M9 2v9M5 8l4 4 4-4" stroke="var(--green)" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M2 14h14" stroke="var(--green)" strokeWidth="1.7" strokeLinecap="round"/>
+              </svg>
+            </div>
             <div>
               <div style={{ fontWeight: 700, fontSize: '14px', color: 'var(--text)' }}>Upload Bukti Transfer</div>
               <div style={{ fontSize: '12px', color: 'var(--muted)' }}>

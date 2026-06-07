@@ -191,7 +191,7 @@ export default function AdminDashboard() {
               <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--muted)', fontSize: '11px', width: 14 }}>{i + 1}</span>
               <div style={{ width: 28, height: 28, borderRadius: 6, background: 'var(--green-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--green)', flexShrink: 0 }}>
                 {prod.image_url
-                  ? <img src={`http://localhost:3006${prod.image_url}`} alt={prod.name} style={{ width: 28, height: 28, borderRadius: 6, objectFit: 'cover' }} onError={e => { e.target.style.display='none'; }} />
+                  ? <img src={prod.image_url} alt={prod.name} style={{ width: 28, height: 28, borderRadius: 6, objectFit: 'cover' }} onError={e => { e.target.style.display='none'; }} />
                   : IC.plant
                 }
               </div>
