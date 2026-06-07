@@ -2,6 +2,26 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api, cart, rupiah } from '../utils/api';
 
+// Sama persis dengan PlantImage di katalog
+function CartItemImage({ item }) {
+  if (item?.image_url) {
+    return (
+      <img
+        src={item.image_url}
+        alt={item.name}
+        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+        onError={(e) => { e.currentTarget.style.display = 'none'; }}
+      />
+    );
+  }
+  return (
+    <svg viewBox="0 0 24 24" fill="none" width="28" height="28" style={{ opacity: 0.45, color: 'var(--green)' }}>
+      <path d="M12 3C12 3 6 8 6 13.5a6 6 0 0012 0C18 8 12 3 12 3z" fill="currentColor"/>
+      <path d="M12 13.5V20" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+    </svg>
+  );
+}
+
 export default function Checkout() {
   const navigate = useNavigate();
   const [items,    setItems]   = useState([]);
@@ -14,7 +34,18 @@ export default function Checkout() {
 
   useEffect(() => {
     const c = cart.get();
-    setItems(c);
+    // Untuk item yang belum punya image_url (cart lama), fetch dari API
+    const missingImage = c.filter(i => !i.image_url);
+    if (missingImage.length === 0) { setItems(c); return; }
+    Promise.all(
+      missingImage.map(i => api.getProduct(i.product_id).then(r => ({ id: i.product_id, image_url: r.data?.image_url || null })).catch(() => ({ id: i.product_id, image_url: null })))
+    ).then(results => {
+      const map = Object.fromEntries(results.map(r => [r.id, r.image_url]));
+      const enriched = c.map(i => i.image_url ? i : { ...i, image_url: map[i.product_id] || null });
+      // Simpan kembali ke cart supaya sesi berikutnya langsung ada
+      cart.save(enriched);
+      setItems(enriched);
+    });
   }, []);
 
   const total = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
@@ -99,24 +130,12 @@ export default function Checkout() {
                   borderBottom: idx < items.length - 1 ? '1px solid var(--border)' : 'none',
                 }}>
                   <div style={{
-                    width: 48, height: 48, borderRadius: 10,
+                    width: 56, height: 56, borderRadius: 10,
                     background: 'linear-gradient(135deg, #e8f5e9, #c8e6c9)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     flexShrink: 0, overflow: 'hidden',
                   }}>
-                    {item.image_url ? (
-                      <img
-                        src={item.image_url}
-                        alt={item.name}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                      />
-                    ) : (
-                      <svg viewBox="0 0 24 24" fill="none" width="28" height="28" style={{ opacity: 0.45, color: 'var(--green)' }}>
-                        <path d="M12 3C12 3 6 8 6 13.5a6 6 0 0012 0C18 8 12 3 12 3z" fill="currentColor"/>
-                        <path d="M12 13.5V20" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                      </svg>
-                    )}
+                    <CartItemImage item={item} />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 600, fontSize: '13.5px', color: 'var(--text)' }}>

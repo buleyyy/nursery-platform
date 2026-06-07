@@ -209,7 +209,10 @@ export default function UserHome() {
                       color: 'var(--muted)', background: 'var(--elevated)',
                       border: '1px solid var(--border)',
                       padding: '1px 5px', borderRadius: 4, lineHeight: 1.6,
-                    }}>#{product.id}</span>
+                    }}>
+                      {product.product_code
+                        || product.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}
+                    </span>
                     {product.category_name}
                   </div>
                   <div className="product-card-name">{product.name}</div>
