@@ -5,3 +5,6 @@ node_modules/
 dist/
 .vscode/settings.json
 package-lock.json
+
+# Upload files — jangan pernah masuk git
+uploads/
