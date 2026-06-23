@@ -9,7 +9,95 @@ const pool = require('./database.js');
 
 async function runMigrations() {
   const conn = await pool.getConnection();
-  const db   = process.env.DB_NAME || 'nursery_db';
+  const db   = process.env.DB_NAME || process.env.MYSQLDATABASE || process.env.MYSQL_DATABASE || 'nursery_db';
+
+  // ── Create tables if not exist ──────────────────────────────────────────────
+  await conn.query(`
+    CREATE TABLE IF NOT EXISTS categories (
+      id          INT AUTO_INCREMENT PRIMARY KEY,
+      name        VARCHAR(100) NOT NULL,
+      description TEXT,
+      icon        VARCHAR(10) DEFAULT NULL,
+      created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  await conn.query(`
+    CREATE TABLE IF NOT EXISTS products (
+      id                INT AUTO_INCREMENT PRIMARY KEY,
+      category_id       INT NOT NULL DEFAULT 1,
+      product_code      VARCHAR(50) DEFAULT NULL,
+      name              VARCHAR(200) NOT NULL,
+      description       TEXT,
+      care_instructions TEXT,
+      price             DECIMAL(12,2) NOT NULL DEFAULT 0,
+      stock_quantity    INT NOT NULL DEFAULT 0,
+      image_emoji       VARCHAR(20) DEFAULT '🌿',
+      image_url         VARCHAR(500) DEFAULT NULL,
+      is_active         TINYINT(1) DEFAULT 1,
+      created_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )
+  `);
+
+  await conn.query(`
+    CREATE TABLE IF NOT EXISTS customers (
+      id           INT AUTO_INCREMENT PRIMARY KEY,
+      name         VARCHAR(150) NOT NULL,
+      phone_number VARCHAR(20),
+      email        VARCHAR(150),
+      address      TEXT,
+      created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  await conn.query(`
+    CREATE TABLE IF NOT EXISTS orders (
+      id               INT AUTO_INCREMENT PRIMARY KEY,
+      order_number     VARCHAR(30),
+      customer_id      INT NOT NULL DEFAULT 0,
+      total_price      DECIMAL(12,2) NOT NULL DEFAULT 0,
+      order_status     VARCHAR(20) NOT NULL DEFAULT 'pending',
+      payment_status   VARCHAR(20) NOT NULL DEFAULT 'pending',
+      shipping_address TEXT,
+      notes            TEXT,
+      order_date       TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  await conn.query(`
+    CREATE TABLE IF NOT EXISTS order_items (
+      id            INT AUTO_INCREMENT PRIMARY KEY,
+      order_id      INT NOT NULL,
+      product_id    INT NOT NULL,
+      quantity      INT NOT NULL DEFAULT 1,
+      price_at_time DECIMAL(12,2) NOT NULL DEFAULT 0,
+      subtotal      DECIMAL(12,2) NOT NULL DEFAULT 0
+    )
+  `);
+
+  await conn.query(`
+    CREATE TABLE IF NOT EXISTS payment_records (
+      id             INT AUTO_INCREMENT PRIMARY KEY,
+      order_id       INT NOT NULL,
+      amount_paid    DECIMAL(12,2),
+      payment_proof  TEXT,
+      payment_method VARCHAR(50),
+      payment_status VARCHAR(20) DEFAULT 'pending',
+      paid_at        TIMESTAMP NULL
+    )
+  `);
+
+  await conn.query(`
+    CREATE TABLE IF NOT EXISTS admin_users (
+      id         INT AUTO_INCREMENT PRIMARY KEY,
+      username   VARCHAR(100) NOT NULL UNIQUE,
+      password   VARCHAR(255) NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  console.log('  [migrate] ✅ Tables ready');
 
   const hasCol = async (table, col) => {
     const [r] = await conn.query(
