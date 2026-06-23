@@ -1,11 +1,23 @@
 /**
  * config/migrate.js
  * Auto-migration — jalan otomatis setiap server start.
- * Deteksi & rename kolom lama, tambah kolom baru, seed data.
  * Aman dijalankan berulang kali (idempotent).
  */
 
 const pool = require('./database.js');
+
+// Mapping emoji lama → key ikon baru (sketchy SVG)
+const EMOJI_TO_KEY = {
+  '🌺': 'flower', '🌸': 'flower', '🌼': 'flower', '🌻': 'sun',
+  '🌹': 'rose',   '🌷': 'flower', '🪷': 'orchid',
+  '🌿': 'leaf',   '🍀': 'leaf',   '🍃': 'leaf',
+  '🌱': 'sprout', '🪴': 'pot',    '🌵': 'cactus',
+  '🎋': 'bamboo', '🎍': 'bamboo',
+  '🌴': 'palm',   '🌲': 'tree',   '🌳': 'tree',
+  '🌾': 'herb',   '🌙': 'garden', '⭐': 'sun',
+  '🏡': 'indoor', '🎑': 'garden', '🫚': 'fruit',
+  '💚': 'leaf',   '🌏': 'outdoor',
+};
 
 async function runMigrations() {
   const conn = await pool.getConnection();
@@ -17,7 +29,7 @@ async function runMigrations() {
       id          INT AUTO_INCREMENT PRIMARY KEY,
       name        VARCHAR(100) NOT NULL,
       description TEXT,
-      icon        VARCHAR(10) DEFAULT NULL,
+      icon        VARCHAR(30) DEFAULT NULL,
       created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `);
@@ -114,7 +126,7 @@ async function runMigrations() {
         await conn.query(`ALTER TABLE \`${table}\` ADD COLUMN \`${col}\` ${def}`);
         console.log(`  [migrate] ✚ ADD ${table}.${col}`);
       } catch (e) {
-        // Mungkin duplikat race condition — abaikan
+        // Duplicate race condition — abaikan
       }
     }
   };
@@ -136,6 +148,25 @@ async function runMigrations() {
 
   try {
     console.log('  [migrate] ▶ Checking schema …');
+
+    // ── categories ────────────────────────────────────────────────────────────
+    await addCol('categories', 'description', 'TEXT');
+    await addCol('categories', 'icon',        "VARCHAR(30) DEFAULT NULL");
+    await addCol('categories', 'created_at',  'TIMESTAMP DEFAULT CURRENT_TIMESTAMP');
+
+    // Perluas icon dari VARCHAR(10) → VARCHAR(30) kalau masih kecil
+    try {
+      const [[col]] = await conn.query(
+        `SELECT CHARACTER_MAXIMUM_LENGTH AS len
+         FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA=? AND TABLE_NAME='categories' AND COLUMN_NAME='icon'`,
+        [db]
+      );
+      if (col && Number(col.len) < 30) {
+        await conn.query(`ALTER TABLE categories MODIFY COLUMN icon VARCHAR(30) DEFAULT NULL`);
+        console.log('  [migrate] ✎ Expand categories.icon to VARCHAR(30)');
+      }
+    } catch (_) {}
 
     // ── customers ────────────────────────────────────────────────────────────
     await renameCol('customers', 'no_hp',    'phone_number', 'VARCHAR(20)');
@@ -162,23 +193,18 @@ async function runMigrations() {
     await addCol('products', 'care_instructions', 'TEXT');
     await addCol('products', 'category_id',       'INT NOT NULL DEFAULT 1');
     await addCol('products', 'description',       'TEXT');
-    await addCol('products', 'product_code',      'VARCHAR(50) DEFAULT NULL COMMENT \'Custom product ID/SKU\'');
+    await addCol('products', 'product_code',      'VARCHAR(50) DEFAULT NULL');
     await addCol('products', 'updated_at',        'TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP');
 
     // ── orders ───────────────────────────────────────────────────────────────
-    // order_status (nama lama yang umum)
     await renameCol('orders', 'status',         'order_status',   "VARCHAR(20) NOT NULL DEFAULT 'pending'");
     await renameCol('orders', 'order_state',    'order_status',   "VARCHAR(20) NOT NULL DEFAULT 'pending'");
     await renameCol('orders', 'status_pesanan', 'order_status',   "VARCHAR(20) NOT NULL DEFAULT 'pending'");
     await addCol('orders', 'order_status',    "VARCHAR(20) NOT NULL DEFAULT 'pending'");
-
-    // payment_status
     await renameCol('orders', 'status_bayar', 'payment_status', "VARCHAR(20) NOT NULL DEFAULT 'pending'");
     await renameCol('orders', 'pay_status',   'payment_status', "VARCHAR(20) NOT NULL DEFAULT 'pending'");
     await renameCol('orders', 'bayar',        'payment_status', "VARCHAR(20) NOT NULL DEFAULT 'pending'");
     await addCol('orders', 'payment_status', "VARCHAR(20) NOT NULL DEFAULT 'pending'");
-
-    // Kolom lain di orders
     await renameCol('orders', 'total',        'total_price',      'DECIMAL(12,2) NOT NULL DEFAULT 0');
     await renameCol('orders', 'harga_total',  'total_price',      'DECIMAL(12,2) NOT NULL DEFAULT 0');
     await renameCol('orders', 'alamat',       'shipping_address', 'TEXT');
@@ -206,10 +232,23 @@ async function runMigrations() {
     await addCol('payment_records', 'payment_method','VARCHAR(50)');
     await addCol('payment_records', 'payment_status',"VARCHAR(20) DEFAULT 'pending'");
 
-    // ── categories columns ─────────────────────────────────────────────────────
-    await addCol('categories', 'description', 'TEXT');
-    await addCol('categories', 'icon',        "VARCHAR(10) DEFAULT NULL");
-    await addCol('categories', 'created_at',  'TIMESTAMP DEFAULT CURRENT_TIMESTAMP');
+    // ── Migrate emoji icons → key strings ─────────────────────────────────────
+    try {
+      const [cats] = await conn.query('SELECT id, icon FROM categories WHERE icon IS NOT NULL');
+      let migratedCount = 0;
+      for (const cat of cats) {
+        const key = EMOJI_TO_KEY[cat.icon];
+        if (key) {
+          await conn.query('UPDATE categories SET icon = ? WHERE id = ?', [key, cat.id]);
+          migratedCount++;
+        }
+      }
+      if (migratedCount > 0) {
+        console.log(`  [migrate] 🎨 Migrated ${migratedCount} category icons (emoji → key)`);
+      }
+    } catch (e) {
+      console.log('  [migrate] ⚠ Icon migration skip:', e.message);
+    }
 
     // ── Seed categories ───────────────────────────────────────────────────────
     try {
@@ -217,11 +256,11 @@ async function runMigrations() {
       if (Number(n) === 0) {
         await conn.query(`
           INSERT INTO categories (name, description, icon) VALUES
-          ('Anggrek',           'Tanaman anggrek premium berbagai jenis', '🌸'),
-          ('Bonsai',            'Bonsai artistik dengan perawatan khusus', '🌳'),
-          ('Sukulen & Kaktus',  'Tanaman tahan kering, minim perawatan', '🌵'),
-          ('Tanaman Hias Daun', 'Tanaman foliage indah untuk interior', '🌿'),
-          ('Tanaman Gantung',   'Cocok untuk pot gantung dan railing', '🪴')`);
+          ('Anggrek',           'Tanaman anggrek premium berbagai jenis', 'orchid'),
+          ('Bonsai',            'Bonsai artistik dengan perawatan khusus', 'tree'),
+          ('Sukulen & Kaktus',  'Tanaman tahan kering, minim perawatan', 'cactus'),
+          ('Tanaman Hias Daun', 'Tanaman foliage indah untuk interior', 'leaf'),
+          ('Tanaman Gantung',   'Cocok untuk pot gantung dan railing', 'vine')`);
         console.log('  [migrate] Seed categories ✓');
       }
     } catch (_) {}

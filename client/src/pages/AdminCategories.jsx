@@ -3,17 +3,290 @@ import { api } from '../utils/api';
 
 const EMPTY_FORM = { name: '', description: '', icon: '' };
 
+// Sketchy hand-drawn SVG icons — stored as key in DB
 const CATEGORY_ICONS = [
-  '🌺', '🌸', '🌼', '🌻', '🌹', '🌷',
-  '🌿', '🍀', '🌱', '🪴', '🌵', '🎋',
-  '🎍', '🌴', '🌲', '🌳', '🍃', '🌾',
-  '🪷', '🌙', '⭐', '🏡', '🎑', '🫚',
+  {
+    key: 'plant',
+    label: 'tanaman',
+    svg: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 20c0 0-.5-7 0-10" strokeDasharray="1 0.5"/>
+        <path d="M12 14c-1.5-3-5-4-5-2 1 1 3 2 5 2z" strokeDasharray="1 0.3"/>
+        <path d="M12 11c1.5-3 5-4 5-2-1 1-3 2-5 2z" strokeDasharray="1 0.3"/>
+        <path d="M9 20h6" strokeDasharray="1 0.5"/>
+      </svg>
+    ),
+  },
+  {
+    key: 'flower',
+    label: 'bunga',
+    svg: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="10" r="2.5" strokeDasharray="1 0.4"/>
+        <path d="M12 7.5c0-2-1.5-3.5-1.5-3.5s-1.5 1.5-1.5 3.5" strokeDasharray="1 0.4"/>
+        <path d="M12 7.5c0-2 1.5-3.5 1.5-3.5s1.5 1.5 1.5 3.5" strokeDasharray="1 0.4"/>
+        <path d="M9.5 10c-2 0-3.5-1.5-3.5-1.5s1.5-1.5 3.5-1.5" strokeDasharray="1 0.4"/>
+        <path d="M14.5 10c2 0 3.5-1.5 3.5-1.5s-1.5-1.5-3.5-1.5" strokeDasharray="1 0.4"/>
+        <path d="M12 12.5c0 2-1.5 3.5-1.5 3.5s-1.5-1.5-1.5-3.5" strokeDasharray="1 0.4"/>
+        <path d="M12 12.5c0 2 1.5 3.5 1.5 3.5s1.5-1.5 1.5-3.5" strokeDasharray="1 0.4"/>
+        <path d="M12 16v4" strokeDasharray="1 0.5"/>
+      </svg>
+    ),
+  },
+  {
+    key: 'leaf',
+    label: 'daun',
+    svg: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 21V9c0 0-6-1-7 5 0 4 4 7 7 7z" strokeDasharray="1 0.4"/>
+        <path d="M12 12c1.5-3 5.5-5 6-3-1 2-3.5 4-6 3" strokeDasharray="1 0.3"/>
+        <path d="M7 16c1-1 3-1 4 0" strokeDasharray="1 0.5" strokeOpacity="0.6"/>
+      </svg>
+    ),
+  },
+  {
+    key: 'cactus',
+    label: 'kaktus',
+    svg: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 20V6" strokeDasharray="1 0.5"/>
+        <path d="M12 10c0 0-3 0-3-3V5" strokeDasharray="1 0.4"/>
+        <path d="M12 13c0 0 3 0 3-3V8" strokeDasharray="1 0.4"/>
+        <path d="M9 20h6" strokeDasharray="1 0.5"/>
+        <path d="M11 7l.5-.5M13 9l.5-.5M10 12l-.5.3" strokeDasharray="1 0.3" strokeOpacity="0.5"/>
+      </svg>
+    ),
+  },
+  {
+    key: 'tree',
+    label: 'pohon',
+    svg: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 20V12" strokeDasharray="1 0.5"/>
+        <path d="M7 14c0-4 8-5 8-1-2.5 0-5.5 1-6 3" strokeDasharray="1 0.4"/>
+        <path d="M9 10c0-4 6-5 6-1-2 0-4.5 1-5 3" strokeDasharray="1 0.4"/>
+        <path d="M9 20h6" strokeDasharray="1 0.5"/>
+      </svg>
+    ),
+  },
+  {
+    key: 'pot',
+    label: 'pot',
+    svg: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M8 20h8M10 20v-3c0-1.5 1-3 2-3s2 1.5 2 3v3" strokeDasharray="1 0.4"/>
+        <path d="M7 14c0-3 2-5 5-5s5 2 5 5" strokeDasharray="1 0.4"/>
+        <path d="M9 10c1-2 5-2 6 0" strokeDasharray="1 0.3" strokeOpacity="0.5"/>
+      </svg>
+    ),
+  },
+  {
+    key: 'droplet',
+    label: 'air',
+    svg: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 4c0 0-6 5-6 10a6 6 0 0 0 12 0c0-5-6-10-6-10z" strokeDasharray="1 0.4"/>
+        <path d="M10 16c1 1 3 1 4 0" strokeDasharray="1 0.4" strokeOpacity="0.6"/>
+      </svg>
+    ),
+  },
+  {
+    key: 'sun',
+    label: 'outdoor',
+    svg: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="4" strokeDasharray="1 0.4"/>
+        <path d="M12 3v2M12 19v2M3 12h2M19 12h2" strokeDasharray="1 0.5"/>
+        <path d="M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4l1.4-1.4M17 7l1.4-1.4" strokeDasharray="1 0.5"/>
+      </svg>
+    ),
+  },
+  {
+    key: 'sprout',
+    label: 'bibit',
+    svg: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 20V10" strokeDasharray="1 0.5"/>
+        <path d="M9 13c0-4 6-5 6-1-2 0-4 1-4 3" strokeDasharray="1 0.4"/>
+        <path d="M15 10c0-4-6-5-6-1 2 0 4 1 4 3" strokeDasharray="1 0.4"/>
+        <path d="M9 20h6" strokeDasharray="1 0.5"/>
+      </svg>
+    ),
+  },
+  {
+    key: 'palm',
+    label: 'palem',
+    svg: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 20V10" strokeDasharray="1 0.5"/>
+        <path d="M12 10c0 0-4-1-5-4 2 0 4 1 5 4z" strokeDasharray="1 0.4"/>
+        <path d="M12 10c0 0 4-1 5-4-2 0-4 1-5 4z" strokeDasharray="1 0.4"/>
+        <path d="M12 13c0 0-3 0-4-3 2 0 3 1 4 3z" strokeDasharray="1 0.4"/>
+        <path d="M12 13c0 0 3 0 4-3-2 0-3 1-4 3z" strokeDasharray="1 0.4"/>
+        <path d="M10 20h4" strokeDasharray="1 0.5"/>
+      </svg>
+    ),
+  },
+  {
+    key: 'bamboo',
+    label: 'bambu',
+    svg: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M10 20V4" strokeDasharray="1 0.5"/>
+        <path d="M14 20V7" strokeDasharray="1 0.5"/>
+        <path d="M10 7h4" strokeDasharray="1 0.4"/>
+        <path d="M10 12h4" strokeDasharray="1 0.4"/>
+        <path d="M10 17h4" strokeDasharray="1 0.4"/>
+        <path d="M10 5c-1.5-1-2-1.5-1-2" strokeDasharray="1 0.4"/>
+        <path d="M14 8c1.5-1 2-1.5 1-2" strokeDasharray="1 0.4"/>
+      </svg>
+    ),
+  },
+  {
+    key: 'herb',
+    label: 'herbal',
+    svg: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 20V8" strokeDasharray="1 0.5"/>
+        <path d="M8 12c0 0 1-5 4-4" strokeDasharray="1 0.4"/>
+        <path d="M16 10c0 0-1-5-4-4" strokeDasharray="1 0.4"/>
+        <path d="M7 16c0 0 2-4 5-3" strokeDasharray="1 0.4"/>
+        <path d="M17 15c0 0-2-4-5-3" strokeDasharray="1 0.4"/>
+        <path d="M10 20h4" strokeDasharray="1 0.5"/>
+      </svg>
+    ),
+  },
+  {
+    key: 'rose',
+    label: 'mawar',
+    svg: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 5c0 0-3 2-3 4s2 3 3 3 3-1 3-3-3-4-3-4z" strokeDasharray="1 0.4"/>
+        <path d="M9 9c-2 0-3 2-2 4s3 2 5 2" strokeDasharray="1 0.4"/>
+        <path d="M15 9c2 0 3 2 2 4s-3 2-5 2" strokeDasharray="1 0.4"/>
+        <path d="M12 15v5" strokeDasharray="1 0.5"/>
+        <path d="M10 17l-1 1" strokeDasharray="1 0.4" strokeOpacity="0.6"/>
+      </svg>
+    ),
+  },
+  {
+    key: 'vine',
+    label: 'merambat',
+    svg: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M5 20c2-3 5-5 7-8" strokeDasharray="1 0.4"/>
+        <path d="M12 12c0 0 2-3 5-3" strokeDasharray="1 0.4"/>
+        <path d="M12 12c0 0-2-3 0-6" strokeDasharray="1 0.4"/>
+        <path d="M9 16c0 0-3 0-3-3" strokeDasharray="1 0.4"/>
+        <circle cx="17" cy="9" r="1.5" strokeDasharray="1 0.4"/>
+        <circle cx="12" cy="6" r="1" strokeDasharray="1 0.4"/>
+      </svg>
+    ),
+  },
+  {
+    key: 'fruit',
+    label: 'buah',
+    svg: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 7c-3 0-5 2.5-5 6s2 6 5 6 5-2.5 5-6-2-6-5-6z" strokeDasharray="1 0.4"/>
+        <path d="M12 7c0 0 1-3 3-3" strokeDasharray="1 0.4"/>
+        <path d="M9 14c1 1.5 5 1.5 6 0" strokeDasharray="1 0.4" strokeOpacity="0.5"/>
+      </svg>
+    ),
+  },
+  {
+    key: 'orchid',
+    label: 'anggrek',
+    svg: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+        <ellipse cx="12" cy="10" rx="2" ry="3" strokeDasharray="1 0.4"/>
+        <path d="M10 8c-1.5-2-4-2-4-2s0 2.5 2 3.5" strokeDasharray="1 0.4"/>
+        <path d="M14 8c1.5-2 4-2 4-2s0 2.5-2 3.5" strokeDasharray="1 0.4"/>
+        <path d="M10 12c-1 2-3 3-3 3s1.5-2.5 3-3" strokeDasharray="1 0.4"/>
+        <path d="M14 12c1 2 3 3 3 3s-1.5-2.5-3-3" strokeDasharray="1 0.4"/>
+        <path d="M12 13v7" strokeDasharray="1 0.5"/>
+        <path d="M10 20h4" strokeDasharray="1 0.5"/>
+      </svg>
+    ),
+  },
+  {
+    key: 'fern',
+    label: 'pakis',
+    svg: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 20V7" strokeDasharray="1 0.5"/>
+        <path d="M12 9c0 0-3-1-3-4" strokeDasharray="1 0.4"/>
+        <path d="M12 9c0 0 3-1 3-4" strokeDasharray="1 0.4"/>
+        <path d="M12 13c0 0-3-1-4-3" strokeDasharray="1 0.4"/>
+        <path d="M12 13c0 0 3-1 4-3" strokeDasharray="1 0.4"/>
+        <path d="M12 17c0 0-2-1-3-2" strokeDasharray="1 0.4"/>
+        <path d="M12 17c0 0 2-1 3-2" strokeDasharray="1 0.4"/>
+      </svg>
+    ),
+  },
+  {
+    key: 'indoor',
+    label: 'indoor',
+    svg: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M4 20h16M6 20V10M18 20V10M4 10l8-6 8 6" strokeDasharray="1 0.4"/>
+        <path d="M10 20v-5h4v5" strokeDasharray="1 0.4"/>
+        <path d="M12 15v-3c-1.5 0-2.5-1-2-2.5" strokeDasharray="1 0.4"/>
+      </svg>
+    ),
+  },
+  {
+    key: 'garden',
+    label: 'taman',
+    svg: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 20h18" strokeDasharray="1 0.4"/>
+        <path d="M7 20v-4c0 0 2-3 5-3s5 3 5 3v4" strokeDasharray="1 0.4"/>
+        <path d="M12 13V8" strokeDasharray="1 0.5"/>
+        <path d="M9 10c1-3 6-3 6 0" strokeDasharray="1 0.4"/>
+        <path d="M5 20v-3c1-1 3-1 3 0" strokeDasharray="1 0.4"/>
+        <path d="M19 20v-3c-1-1-3-1-3 0" strokeDasharray="1 0.4"/>
+      </svg>
+    ),
+  },
+  {
+    key: 'seed',
+    label: 'benih',
+    svg: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 20V14" strokeDasharray="1 0.5"/>
+        <path d="M8 17c0-4 8-5 8-1-3 0-5 1-5 3" strokeDasharray="1 0.4"/>
+        <ellipse cx="12" cy="10" rx="4" ry="5" strokeDasharray="1 0.4"/>
+        <path d="M10 8c1-1 3-1 4 0" strokeDasharray="1 0.3" strokeOpacity="0.5"/>
+        <path d="M11 11c0 1 2 1 2 0" strokeDasharray="1 0.3" strokeOpacity="0.5"/>
+      </svg>
+    ),
+  },
 ];
+
+// Render icon by key — fallback to tag icon
+function CategoryIcon({ iconKey, size = 22, color = 'currentColor' }) {
+  const found = CATEGORY_ICONS.find(i => i.key === iconKey);
+  if (!found) {
+    return (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M20 7H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z" strokeDasharray="1 0.4"/>
+        <path d="M7 12h.01M12 12h.01M17 12h.01" strokeDasharray="1 0.4"/>
+      </svg>
+    );
+  }
+  // Clone SVG with custom size & color
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+      {found.svg.props.children}
+    </svg>
+  );
+}
 
 export default function AdminCategories() {
   const [categories, setCategories] = useState([]);
   const [loading,    setLoading]    = useState(true);
-  const [modal,      setModal]      = useState(null); // null | 'add' | 'edit'
+  const [modal,      setModal]      = useState(null);
   const [selected,   setSelected]   = useState(null);
   const [form,       setForm]       = useState(EMPTY_FORM);
   const [saving,     setSaving]     = useState(false);
@@ -194,9 +467,10 @@ export default function AdminCategories() {
                     width: 48, height: 48, borderRadius: 12,
                     background: 'var(--green-dim)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: '1.6rem', flexShrink: 0,
+                    flexShrink: 0,
+                    color: 'var(--green-2)',
                   }}>
-                    {cat.icon || '🏷️'}
+                    <CategoryIcon iconKey={cat.icon} size={26} />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 700, fontSize: '14.5px', marginBottom: 2 }}>
@@ -212,10 +486,7 @@ export default function AdminCategories() {
                     )}
                   </div>
                   <div style={{ display: 'flex', gap: 5, flexShrink: 0 }}>
-                    <button
-                      className="btn btn-ghost btn-sm"
-                      onClick={() => openEdit(cat)}
-                    >Edit</button>
+                    <button className="btn btn-ghost btn-sm" onClick={() => openEdit(cat)}>Edit</button>
                     <button
                       className="btn btn-danger btn-sm"
                       disabled={deleting === cat.id}
@@ -288,7 +559,9 @@ export default function AdminCategories() {
                       </td>
                       <td>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-                          <span style={{ fontSize: '1.3rem' }}>{cat.icon || '🏷️'}</span>
+                          <span style={{ color: 'var(--green-2)', display: 'flex' }}>
+                            <CategoryIcon iconKey={cat.icon} size={20} />
+                          </span>
                           <span style={{ fontWeight: 600, fontSize: '13.5px' }}>{cat.name}</span>
                         </div>
                       </td>
@@ -363,25 +636,37 @@ export default function AdminCategories() {
               <div className="form-group">
                 <label className="form-label">Icon Kategori</label>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                  {CATEGORY_ICONS.map(ic => (
-                    <button
-                      key={ic} type="button"
-                      onClick={() => setForm(f => ({ ...f, icon: ic }))}
-                      style={{
-                        width: 36, height: 36, fontSize: '1.25rem',
-                        background: form.icon === ic ? 'var(--green-dim)' : 'var(--elevated)',
-                        border: form.icon === ic
-                          ? '1.5px solid rgba(82,214,138,0.5)'
-                          : '1px solid var(--border)',
-                        borderRadius: 7, cursor: 'pointer',
-                        transition: 'all 0.15s',
-                      }}
-                    >{ic}</button>
-                  ))}
+                  {CATEGORY_ICONS.map(ic => {
+                    const isSelected = form.icon === ic.key;
+                    return (
+                      <button
+                        key={ic.key}
+                        type="button"
+                        title={ic.label}
+                        onClick={() => setForm(f => ({ ...f, icon: ic.key }))}
+                        style={{
+                          width: 38, height: 38,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          background: isSelected ? 'var(--green-dim)' : 'var(--elevated)',
+                          border: isSelected
+                            ? '1.5px solid rgba(82,214,138,0.5)'
+                            : '1px solid var(--border)',
+                          borderRadius: 8, cursor: 'pointer',
+                          transition: 'all 0.15s',
+                          color: isSelected ? 'var(--green-2)' : 'var(--text-2)',
+                        }}
+                      >
+                        {ic.svg}
+                      </button>
+                    );
+                  })}
                 </div>
                 {form.icon && (
-                  <div style={{ marginTop: 6, fontSize: '12px', color: 'var(--muted)' }}>
-                    Dipilih: {form.icon}
+                  <div style={{ marginTop: 8, fontSize: '12px', color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ color: 'var(--green-2)' }}>
+                      <CategoryIcon iconKey={form.icon} size={16} />
+                    </span>
+                    Dipilih: <strong>{CATEGORY_ICONS.find(i => i.key === form.icon)?.label ?? form.icon}</strong>
                   </div>
                 )}
               </div>
