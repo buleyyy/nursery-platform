@@ -1,6 +1,7 @@
 // Centralized API helper — semua request lewat sini
-// BASE kosong = pakai proxy Vite (/api/* → http://localhost:3006/api/*)
-const BASE = '/api';
+// Dev  : VITE_API_URL tidak di-set → BASE = '/api' → proxy Vite ke localhost:3006
+// Prod : VITE_API_URL = 'https://your-backend.up.railway.app' → fetch langsung ke Railway
+const BASE = (import.meta.env.VITE_API_URL || '') + '/api';
 
 const getAdminToken = () => localStorage.getItem('adminToken') || '';
 
@@ -19,7 +20,7 @@ const req = async (method, path, body, auth = false) => {
 };
 
 export const api = {
-  // ── Public ────────────────────────────────────────────────────────────────
+  // Public
   getProducts:      (params = '')  => req('GET', `/products${params}`),
   getProduct:       (id)           => req('GET', `/products/${id}`),
   createOrder:      (body)         => req('POST', '/orders', body),
@@ -40,10 +41,10 @@ export const api = {
     return data;
   },
 
-  // ── Auth ──────────────────────────────────────────────────────────────────
+  // Auth
   login:            (body)         => req('POST', '/auth/login', body),
 
-  // ── Admin (protected) ─────────────────────────────────────────────────────
+  // Admin (protected)
   dashboard:        ()             => req('GET', '/admin/dashboard', null, true),
   adminOrders:      (params = '')  => req('GET', `/admin/orders${params}`, null, true),
   adminOrderDetail: (id)           => req('GET', `/admin/orders/${id}`, null, true),
@@ -72,10 +73,10 @@ export const api = {
     if (!res.ok) throw new Error(data.message || 'Upload foto gagal');
     return data;
   },
-  salesReport:      (year, period = 'monthly') => req('GET', `/admin/sales-report?year=${year}&period=${period}`, null, true),
+  salesReport: (year, period = 'monthly') => req('GET', `/admin/sales-report?year=${year}&period=${period}`, null, true),
 };
 
-// ─── Cart helpers (localStorage) ─────────────────────────────────────────────
+// Cart helpers (localStorage)
 export const cart = {
   get:    () => JSON.parse(localStorage.getItem('cart') || '[]'),
   save:   (items) => localStorage.setItem('cart', JSON.stringify(items)),
@@ -110,10 +111,10 @@ export const cart = {
   total: () => cart.get().reduce((sum, i) => sum + i.price * i.quantity, 0),
 };
 
-// ─── Format currency ─────────────────────────────────────────────────────────
+// Format currency
 export const rupiah = (num) => 'Rp ' + Number(num).toLocaleString('id-ID');
 
-// ─── Status labels & badge class ─────────────────────────────────────────────
+// Status labels & badge class
 export const statusLabel = {
   pending:    'Menunggu',
   confirmed:  'Dikonfirmasi',
@@ -128,9 +129,17 @@ export const statusLabel = {
 
 export const statusBadge = (s) => `badge badge-${s}`;
 
-// ─── Proof image URL helper ───────────────────────────────────────────────────
+// URL helpers — dev: relative path, prod: absolute ke Railway backend
+const API_ORIGIN = import.meta.env.VITE_API_URL || '';
+
 export const proofUrl = (proofPath) => {
   if (!proofPath) return null;
   const filename = proofPath.split('/').pop();
-  return `/api/proof/${filename}`;
+  return `${API_ORIGIN}/api/proof/${filename}`;
+};
+
+export const productImageUrl = (imagePath) => {
+  if (!imagePath) return null;
+  const filename = imagePath.split('/').pop();
+  return `${API_ORIGIN}/api/product-images/${filename}`;
 };

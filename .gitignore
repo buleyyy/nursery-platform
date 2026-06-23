@@ -8,3 +8,6 @@ package-lock.json
 
 # Upload files — jangan pernah masuk git
 uploads/
+
+# .env.example boleh masuk git (template referensi)
+!.env.example

@@ -7,43 +7,72 @@ const runMigrations = require('./config/migrate');
 
 const app = express();
 
-// ─── Middleware ───────────────────────────────────────────────────────────────
-app.use(cors());
+// CORS — dev: allow semua, prod: hanya izinkan domain frontend
+const allowedOrigins = process.env.FRONTEND_URL
+  ? [process.env.FRONTEND_URL, 'http://localhost:5173']
+  : true; // allow all (dev)
+
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true,
+}));
+
 app.use(express.json());
 
-// ─── Static files ────────────────────────────────────────────────────────────
+// Static files (upload produk & bukti transfer)
 app.use('/api/proof',          express.static(path.join(__dirname, 'uploads', 'payment-proofs')));
 app.use('/api/product-images', express.static(path.join(__dirname, 'uploads', 'product-images')));
 
-// ─── Routes ──────────────────────────────────────────────────────────────────
+// Routes
 app.use('/api/auth',     require('./routes/auth'));
 app.use('/api/products', require('./routes/product'));
 app.use('/api/orders',   require('./routes/order'));
 app.use('/api/admin',    require('./routes/admin'));
 
-// ─── Health Check ────────────────────────────────────────────────────────────
+// Health Check
 app.get('/', (req, res) => {
   res.json({ message: 'H. Ali Nursery API — OK', version: '2.0.0' });
 });
 
-// ─── 404 ─────────────────────────────────────────────────────────────────────
+// 404
 app.use((req, res) => {
   res.status(404).json({ success: false, message: `Route ${req.path} tidak ditemukan` });
 });
 
-// ─── Error Handler ────────────────────────────────────────────────────────────
+// Error Handler
 app.use((err, req, res, next) => {
   console.error('Error:', err);
   res.status(err.status || 500).json({ success: false, message: err.message || 'Internal Server Error' });
 });
 
-// ─── Start ───────────────────────────────────────────────────────────────────
+// Start
 const PORT = process.env.PORT || 3006;
+
+/**
+ * Retry DB migration — Railway MySQL kadang belum siap saat container start.
+ * Coba 5x dengan jeda 3 detik.
+ */
+async function runMigrationsWithRetry(retries = 5, delayMs = 3000) {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      await runMigrations();
+      return; // sukses
+    } catch (err) {
+      console.error(`  [migrate] ❌ Attempt ${attempt}/${retries} gagal: ${err.message}`);
+      if (attempt < retries) {
+        console.log(`  [migrate] ⏳ Retry dalam ${delayMs / 1000}s …`);
+        await new Promise(r => setTimeout(r, delayMs));
+      } else {
+        console.error('  [migrate] ⚠️  Semua retry habis. Server tetap jalan, DB mungkin belum siap.');
+      }
+    }
+  }
+}
 
 app.listen(PORT, async () => {
   console.log(`\n╔════════════════════════════════════════╗`);
   console.log(`║  🌿 H. Ali Nursery API v2.0            ║`);
-  console.log(`║  http://localhost:${PORT}                 ║`);
+  console.log(`║  PORT: ${PORT}${' '.repeat(30 - String(PORT).length)}║`);
   console.log(`╠════════════════════════════════════════╣`);
   console.log(`║  POST  /api/auth/login                 ║`);
   console.log(`║  GET   /api/products                   ║`);
@@ -53,5 +82,5 @@ app.listen(PORT, async () => {
   console.log(`║  GET   /api/admin/dashboard  [auth]    ║`);
   console.log(`╚════════════════════════════════════════╝`);
 
-  await runMigrations();
+  await runMigrationsWithRetry();
 });
