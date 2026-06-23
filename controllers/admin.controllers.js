@@ -359,7 +359,10 @@ exports.rejectPayment = async (req, res) => {
 let _colsEnsured = false;
 async function ensureProductCols() {
   if (_colsEnsured) return;
-  const db = process.env.DB_NAME || 'nursery_db';
+  const [[row]] = await pool.query(
+    'SELECT DATABASE() AS db'
+  );
+  const db = row.db;
   const ensureCol = async (col, def) => {
     const [[{ n }]] = await pool.query(
       `SELECT COUNT(*) AS n FROM information_schema.COLUMNS
@@ -371,9 +374,11 @@ async function ensureProductCols() {
       console.log(`  [auto-migrate] ✚ ADD products.${col}`);
     }
   };
-  await ensureCol('image_url',    'VARCHAR(500) DEFAULT NULL');
-  await ensureCol('product_code', 'VARCHAR(50)  DEFAULT NULL');
-  await ensureCol('updated_at',   'TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP');
+
+  await ensureCol('image_url', 'VARCHAR(500) DEFAULT NULL');
+  await ensureCol('product_code', 'VARCHAR(50) DEFAULT NULL');
+  await ensureCol('updated_at', 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP');
+
   _colsEnsured = true;
 }
 
