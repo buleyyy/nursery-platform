@@ -287,7 +287,7 @@ export default function AdminProducts() {
                               color: stockOut ? 'var(--danger)' : stockLow ? 'var(--warn)' : 'var(--muted)',
                               background: stockOut ? 'var(--danger-dim)' : stockLow ? 'var(--warn-dim)' : 'var(--elevated)',
                             }}>
-                              📦 {product.stock_quantity} unit
+                              {product.stock_quantity} unit
                               {stockOut && ' · Habis'}
                               {!stockOut && stockLow && ' · Hampir habis'}
                             </span>

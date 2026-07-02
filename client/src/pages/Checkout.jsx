@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { api, cart, rupiah } from '../utils/api';
+import { api, cart, rupiah, productImageUrl } from '../utils/api';
 
 // Sama persis dengan PlantImage di katalog
 function CartItemImage({ item }) {
   if (item?.image_url) {
     return (
       <img
-        src={item.image_url}
+        src={productImageUrl(item.image_url)}
         alt={item.name}
         style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
         onError={(e) => { e.currentTarget.style.display = 'none'; }}
