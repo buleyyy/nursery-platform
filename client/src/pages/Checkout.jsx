@@ -83,13 +83,13 @@ export default function Checkout() {
 
   if (items.length === 0) return (
     <div style={{ maxWidth: 480, margin: '80px auto', textAlign: 'center', padding: '0 5%' }}>
-      <div style={{ fontSize: '5rem', marginBottom: 16 }}>🛒</div>
+      <div style={{ fontSize: '5rem', marginBottom: 16 }}></div>
       <h2 style={{ color: 'var(--text)', marginBottom: 10 }}>Keranjang Kosong</h2>
       <p style={{ color: 'var(--text-2)', marginTop: 8, marginBottom: 28 }}>
         Tambahkan tanaman ke keranjang dulu ya.
       </p>
       <button className="btn btn-primary btn-lg" onClick={() => navigate('/')}>
-        🌿 Lihat Katalog
+        Lihat Katalog
       </button>
     </div>
   );

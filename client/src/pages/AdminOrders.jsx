@@ -78,7 +78,7 @@ export default function AdminOrders() {
       {/* Filters */}
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 18 }}>
         <div className="search-bar" style={{ flex: 1, minWidth: 220 }}>
-          <span className="search-bar-icon">🔍</span>
+          <span className="search-bar-icon"></span>
           <input className="input"
             placeholder="Cari no. pesanan, nama, HP..."
             value={filters.search}

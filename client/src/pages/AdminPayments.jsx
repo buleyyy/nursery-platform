@@ -389,16 +389,16 @@ export default function AdminPayments() {
       {/* ── Legend badge ── */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 18, flexWrap: 'wrap' }}>
         {[
-          ['✅', 'Konfirmasi — pembayaran valid', '#d1fae5', '#047857', '#a7f3d0'],
-          ['❌', 'Tolak — pembayaran bermasalah', '#fee2e2', '#b91c1c', '#fecaca'],
-          ['⏳', 'Belum ada bukti transfer',      '#fef3c7', '#b45309', '#fde68a'],
-        ].map(([icon, label, bg, color, border]) => (
+          ['Konfirmasi — pembayaran valid', '#d1fae5', '#047857', '#a7f3d0'],
+          ['Tolak — pembayaran bermasalah', '#fee2e2', '#b91c1c', '#fecaca'],
+          ['Belum ada bukti transfer',      '#fef3c7', '#b45309', '#fde68a'],
+        ].map(([label, bg, color, border]) => (
           <div key={label} style={{
             display: 'inline-flex', alignItems: 'center', gap: 7,
             background: bg, color, border: `1px solid ${border}`,
             borderRadius: 999, padding: '4px 12px', fontSize: '12px', fontWeight: 600,
           }}>
-            <span>{icon}</span>{label}
+            {label}
           </div>
         ))}
       </div>
