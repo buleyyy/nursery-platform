@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { api, cart, rupiah } from '../utils/api';
+import { api, cart, rupiah, productImageUrl } from '../utils/api';
 
 // ─── Badge warna ID produk  ─────────────────
 const BADGE_PALETTE = [
@@ -91,7 +91,7 @@ export default function ProductDetail() {
         }}>
           {product.image_url ? (
             <img
-              src={product.image_url}
+              src={productImageUrl(product.image_url)}
               alt={product.name}
               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
               onError={(e) => { e.target.style.display = 'none'; }}

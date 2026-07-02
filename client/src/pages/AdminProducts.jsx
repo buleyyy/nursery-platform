@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { api, rupiah } from '../utils/api';
+import { api, rupiah, productImageUrl } from '../utils/api';
 
-// Gambar produk — cukup path relatif (proxy Vite menghandle /api/*)
+// Gambar produk — selalu resolve ke domain backend (Railway)
 const EMPTY_FORM = {
   name: '', description: '', price: '',
   stock_quantity: '', category_id: '',
@@ -26,7 +26,7 @@ export function ProductImage({ product, size = 40, style = {} }) {
   if (product?.image_url) {
     return (
       <img
-        src={product.image_url}
+        src={productImageUrl(product.image_url)}
         alt={product.name}
         style={{ width: size, height: size, borderRadius: 8, objectFit: 'cover', display: 'block', ...style }}
         onError={(e) => { e.target.style.display = 'none'; }}
@@ -115,7 +115,7 @@ export default function AdminProducts() {
     });
     setSelected(product);
     setImageFile(null);
-    setImagePreview(product.image_url || null);
+    setImagePreview(product.image_url ? productImageUrl(product.image_url) : null);
     setError(null);
     setModal('edit');
   };

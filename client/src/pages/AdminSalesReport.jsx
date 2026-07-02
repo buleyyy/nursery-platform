@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { api, rupiah } from '../utils/api';
+import { api, rupiah, productImageUrl } from '../utils/api';
 
 // ─── Mini Bar Chart ───────────────────────────────────────────────────────────
 const BarChart = ({ data, valueKey, labelKey, color = 'var(--green)' }) => {
@@ -539,7 +539,7 @@ export default function AdminSalesReport() {
                   </span>
                   <div style={{ width: 24, height: 24, borderRadius: 6, background: 'var(--green-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--green)', flexShrink: 0 }}>
                     {plant.image_url
-                      ? <img src={plant.image_url} alt={plant.name} style={{ width: 24, height: 24, borderRadius: 6, objectFit: 'cover' }} onError={e => { e.target.style.display='none'; }} />
+                      ? <img src={productImageUrl(plant.image_url)} alt={plant.name} style={{ width: 24, height: 24, borderRadius: 6, objectFit: 'cover' }} onError={e => { e.target.style.display='none'; }} />
                       : <svg viewBox="0 0 24 24" fill="none" width="14" height="14"><path d="M12 3C12 3 6 8 6 13.5a6 6 0 0012 0C18 8 12 3 12 3z" fill="currentColor" opacity=".7"/><path d="M12 13.5V20" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
                     }
                   </div>

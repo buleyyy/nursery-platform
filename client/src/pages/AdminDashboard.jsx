@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { api, rupiah, statusLabel, statusBadge } from '../utils/api';
+import { api, rupiah, statusLabel, statusBadge, productImageUrl } from '../utils/api';
 
 // SVG icons untuk stat cards
 const IC = {
@@ -191,7 +191,7 @@ export default function AdminDashboard() {
               <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--muted)', fontSize: '11px', width: 14 }}>{i + 1}</span>
               <div style={{ width: 28, height: 28, borderRadius: 6, background: 'var(--green-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--green)', flexShrink: 0 }}>
                 {prod.image_url
-                  ? <img src={prod.image_url} alt={prod.name} style={{ width: 28, height: 28, borderRadius: 6, objectFit: 'cover' }} onError={e => { e.target.style.display='none'; }} />
+                  ? <img src={productImageUrl(prod.image_url)} alt={prod.name} style={{ width: 28, height: 28, borderRadius: 6, objectFit: 'cover' }} onError={e => { e.target.style.display='none'; }} />
                   : IC.plant
                 }
               </div>
