@@ -20,9 +20,9 @@ function UploadProof({ orderNumber, existingProof, onSuccess }) {
 
   const handleFile = (f) => {
     if (!f) return;
-    if (f.size > 5 * 1024 * 1024) { setError('Ukuran file maksimal 5 MB'); return; }
-    if (!['image/jpeg','image/png','image/webp','image/jpg'].includes(f.type)) {
-      setError('Hanya file JPG / PNG / WEBP'); return;
+    if (f.size > 2 * 1024 * 1024) { setError('Ukuran file maksimal 2 MB'); return; }
+    if (!['image/jpeg','image/png','image/jpg'].includes(f.type)) {
+      setError('Hanya file JPG / PNG'); return;
     }
     setError(null);
     setFile(f);
@@ -73,7 +73,7 @@ function UploadProof({ orderNumber, existingProof, onSuccess }) {
         <input
           ref={inputRef}
           type="file"
-          accept="image/jpeg,image/png,image/webp"
+          accept="image/jpeg,image/png"
           style={{ display: 'none' }}
           onChange={(e) => handleFile(e.target.files?.[0])}
         />
@@ -106,7 +106,7 @@ function UploadProof({ orderNumber, existingProof, onSuccess }) {
               marginTop: 10, fontSize: '12px', color: 'var(--muted)',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
             }}>
-              <span>📷</span> Klik atau seret untuk ganti foto
+              <span></span> Klik atau seret untuk ganti foto
             </div>
           </div>
         ) : (
@@ -119,13 +119,13 @@ function UploadProof({ orderNumber, existingProof, onSuccess }) {
               borderRadius: '50%',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontSize: '1.4rem',
-            }}>📤</div>
+            }}> </div>
             <div style={{ fontWeight: 600, fontSize: '14px', color: 'var(--text)', marginBottom: 5 }}>
               Upload Bukti Transfer
             </div>
             <div style={{ fontSize: '12.5px', color: 'var(--muted)', lineHeight: 1.6 }}>
               Seret foto ke sini, atau <span style={{ color: 'var(--green)', fontWeight: 600 }}>pilih file</span>
-              <br />JPG / PNG / WEBP · Maks 5 MB
+              <br />JPG & PNG  · Maks 2 MB
             </div>
           </div>
         )}
@@ -148,7 +148,7 @@ function UploadProof({ orderNumber, existingProof, onSuccess }) {
         >
           {uploading
             ? <><span className="spinner" style={{ width: 15, height: 15, borderWidth: 2, borderColor: 'rgba(255,255,255,0.3)', borderTopColor: '#fff' }} /> Mengunggah...</>
-            : '📤 Upload Bukti Sekarang'}
+            : 'Upload Bukti Sekarang'}
         </button>
       )}
 

@@ -22,8 +22,8 @@ const upload = multer({
   storage,
   limits: { fileSize: 2 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    if (/^image\/(jpeg|jpg|png|webp)$/.test(file.mimetype)) cb(null, true);
-    else cb(new Error('Hanya JPG, PNG, atau WebP yang diizinkan'));
+    if (/^image\/(jpeg|jpg|png)$/.test(file.mimetype)) cb(null, true);
+    else cb(new Error('Hanya JPG dan PNG, diizinkan'));
   },
 });
 

@@ -59,7 +59,7 @@ export default function AdminLogin() {
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: '1.9rem',
             boxShadow: '0 6px 24px rgba(45,140,78,0.3)',
-          }}>🌿</div>
+          }}> </div>
           <h1 style={{
             fontFamily: 'var(--font-display)',
             fontSize: '1.8rem', fontWeight: 700,
