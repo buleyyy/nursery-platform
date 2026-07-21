@@ -234,6 +234,8 @@ async function runMigrations() {
     await addCol('orders', 'order_number',     'VARCHAR(30)');
     await addCol('orders', 'customer_id',      'INT NOT NULL DEFAULT 0');
     await addCol('orders', 'order_date',       'TIMESTAMP DEFAULT CURRENT_TIMESTAMP');
+    await addCol('orders', 'tracking_number',  'VARCHAR(50) DEFAULT NULL');
+    await addCol('orders', 'courier',          'VARCHAR(30) DEFAULT NULL');
 
     // ── order_items ──────────────────────────────────────────────────────────
     await renameCol('order_items', 'harga',     'price_at_time', 'DECIMAL(12,2) NOT NULL DEFAULT 0');

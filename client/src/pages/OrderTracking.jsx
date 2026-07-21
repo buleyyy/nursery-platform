@@ -209,8 +209,33 @@ export default function OrderTracking() {
 
           {order.payment_status === 'pending' && order.order_status !== 'cancelled' && (
             <div className="alert alert-warn" style={{ marginTop: 14 }}>
-              <span>⏳</span>
+              <span> </span>
               Menunggu konfirmasi pembayaran dari admin. Sudah transfer? Hubungi admin via WhatsApp.
+            </div>
+          )}
+
+          {order.tracking_number && ['shipped', 'delivered'].includes(order.order_status) && (
+            <div style={{
+              marginTop: 14, padding: '14px 16px',
+              background: 'var(--green-dim, #eefbf2)', border: '1px solid var(--green)',
+              borderRadius: 'var(--radius, 10px)',
+            }}>
+              <div style={{ fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>
+                Nomor Resi — {order.courier}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: '15px', color: 'var(--green)', letterSpacing: '0.03em' }}>
+                  {order.tracking_number}
+                </span>
+                <button
+                  className="btn btn-sm"
+                  style={{ padding: '3px 10px', fontSize: 11.5 }}
+                  onClick={() => { navigator.clipboard?.writeText(order.tracking_number); }}
+                >Salin</button>
+              </div>
+              <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 6 }}>
+                Cek posisi paket langsung di website {order.courier} menggunakan nomor resi ini.
+              </div>
             </div>
           )}
         </div>

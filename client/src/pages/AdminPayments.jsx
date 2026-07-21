@@ -110,12 +110,14 @@ function ConfirmModal({ order, proof, onConfirm, onClose, onPreview }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 18 }}>
           <div className="form-group">
             <label className="form-label">Metode Pembayaran</label>
-            <select className="select" value={form.payment_method}
-              onChange={(e) => setForm(f => ({ ...f, payment_method: e.target.value }))}>
-              <option value="transfer">Transfer Bank</option>
-              <option value="cash">Tunai</option>
-              <option value="qris">QRIS</option>
-            </select>
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              padding: '9px 13px', borderRadius: 'var(--radius)',
+              background: 'var(--green-dim)', border: '1px solid var(--green)',
+              fontSize: '13.5px', fontWeight: 600, color: 'var(--green)',
+            }}>
+              🏦 Transfer Bank
+            </div>
           </div>
           <div className="form-group">
             <label className="form-label">Catatan (opsional)</label>

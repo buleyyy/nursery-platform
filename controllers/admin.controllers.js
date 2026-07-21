@@ -253,6 +253,16 @@ exports.getOrderDetail = async (req, res) => {
 };
 
 // ─── Update Status Pesanan ───────────────────────────────────────────────────
+const COURIERS = ['JNE', 'J&T Express', 'SiCepat', 'Anteraja'];
+
+function generateDummyResi(courier) {
+  const prefix = {
+    'JNE': 'JNE', 'J&T Express': 'JP', 'SiCepat': 'SC', 'Anteraja': 'AJ',
+  }[courier] || 'RSI';
+  const digits = Math.floor(1000000000 + Math.random() * 8999999999).toString();
+  return `${prefix}${digits}`;
+}
+
 exports.updateOrderStatus = async (req, res) => {
   const { id } = req.params;
   const { order_status } = req.body;
@@ -279,9 +289,26 @@ exports.updateOrderStatus = async (req, res) => {
         );
       }
     }
+
+    // Generate resi dummy otomatis pas pertama kali masuk status 'shipped'
+    let trackingNumber = order.tracking_number;
+    let courier        = order.courier;
+    if (order_status === 'shipped' && !order.tracking_number) {
+      courier        = COURIERS[Math.floor(Math.random() * COURIERS.length)];
+      trackingNumber = generateDummyResi(courier);
+      await connection.query(
+        'UPDATE orders SET tracking_number = ?, courier = ? WHERE id = ?',
+        [trackingNumber, courier, id]
+      );
+    }
+
     await connection.query('UPDATE orders SET order_status = ? WHERE id = ?', [order_status, id]);
     await connection.commit();
-    return res.json({ success: true, message: `Status diupdate ke "${order_status}"` });
+    return res.json({
+      success: true,
+      message: `Status diupdate ke "${order_status}"`,
+      data: { tracking_number: trackingNumber, courier }
+    });
   } catch (error) {
     await connection.rollback();
     console.error('❌ updateOrderStatus error:', error.message);

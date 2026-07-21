@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import * as XLSX from 'xlsx';
 import { api, rupiah, productImageUrl } from '../utils/api';
 
 // ─── Mini Bar Chart ───────────────────────────────────────────────────────────
@@ -273,57 +274,67 @@ export default function AdminSalesReport() {
       const yData = getYearlyData();
       const cList = data?.categorySales || [];
       const cTotal = cList.reduce((s,c)=>s+Number(c.revenue||0),0);
-      const rows = [];
-      rows.push(['Laporan Penjualan H. Ali Nursery']);
-      rows.push([`Periode: ${periodLabel}`]);
-      rows.push([`Diekspor: ${new Date().toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'})}`]);
-      rows.push([]);
-      rows.push(['=== RINGKASAN ===']);
-      rows.push(['Metric','Nilai']);
-      rows.push(['Total Revenue (Rp)', String(summary?.total_revenue||0)]);
-      rows.push(['Total Pesanan',      String(summary?.total_orders||0)]);
-      rows.push(['Item Terjual',       String(summary?.total_items_sold||0)]);
-      rows.push(['Pelanggan Unik',     String(summary?.unique_customers||0)]);
-      rows.push([]);
+
+      const wb = XLSX.utils.book_new();
+
+      // ── Sheet 1: Ringkasan ──────────────────────────────────────────────
+      const ringkasan = [
+        ['Laporan Penjualan H. Ali Nursery'],
+        [`Periode: ${periodLabel}`],
+        [`Diekspor: ${new Date().toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'})}`],
+        [],
+        ['Metric', 'Nilai'],
+        ['Total Revenue (Rp)', Number(summary?.total_revenue || 0)],
+        ['Total Pesanan',      Number(summary?.total_orders || 0)],
+        ['Item Terjual',       Number(summary?.total_items_sold || 0)],
+        ['Pelanggan Unik',     Number(summary?.unique_customers || 0)],
+      ];
+      const wsRingkasan = XLSX.utils.aoa_to_sheet(ringkasan);
+      wsRingkasan['!cols'] = [{ wch: 28 }, { wch: 20 }];
+      XLSX.utils.book_append_sheet(wb, wsRingkasan, 'Ringkasan');
+
+      // ── Sheet 2: Data Penjualan (sesuai periode aktif) ──────────────────
+      let penjualan = [];
       if (period === 'monthly') {
-        rows.push(['=== DATA PENJUALAN BULANAN ===']);
-        rows.push(['Bulan','Pesanan','Revenue (Rp)','Gross Sales (Rp)','Avg/Pesanan (Rp)']);
+        penjualan.push(['Bulan','Pesanan','Revenue (Rp)','Gross Sales (Rp)','Avg/Pesanan (Rp)']);
         mData.forEach(m => {
           const avg = m.total_orders > 0 ? Math.round(m.revenue/m.total_orders) : 0;
-          rows.push([m.month_name, String(m.total_orders||0), String(m.revenue||0), String(m.gross_sales||0), String(avg)]);
+          penjualan.push([m.month_name, Number(m.total_orders||0), Number(m.revenue||0), Number(m.gross_sales||0), avg]);
         });
-        rows.push(['TOTAL', String(mData.reduce((s,m)=>s+m.total_orders,0)), String(mData.reduce((s,m)=>s+m.revenue,0)), String(mData.reduce((s,m)=>s+m.gross_sales,0)), '']);
+        penjualan.push(['TOTAL', mData.reduce((s,m)=>s+m.total_orders,0), mData.reduce((s,m)=>s+m.revenue,0), mData.reduce((s,m)=>s+m.gross_sales,0), '']);
       } else if (period === 'weekly') {
-        rows.push(['=== DATA PENJUALAN MINGGUAN ===']);
-        rows.push(['Minggu','Periode','Pesanan','Revenue (Rp)','Gross Sales (Rp)']);
-        wData.forEach(w => rows.push([`W${w.week_num} '${String(w.year||'').slice(-2)}`, `${fmtDate(w.week_start)} - ${fmtDate(w.week_end)}`, String(w.total_orders), String(w.revenue), String(w.gross_sales)]));
+        penjualan.push(['Minggu','Periode','Pesanan','Revenue (Rp)','Gross Sales (Rp)']);
+        wData.forEach(w => penjualan.push([`W${w.week_num} '${String(w.year||'').slice(-2)}`, `${fmtDate(w.week_start)} - ${fmtDate(w.week_end)}`, Number(w.total_orders), Number(w.revenue), Number(w.gross_sales)]));
       } else {
-        rows.push(['=== DATA PENJUALAN TAHUNAN ===']);
-        rows.push(['Tahun','Pesanan','Revenue (Rp)','Gross Sales (Rp)']);
-        yData.forEach(y => rows.push([String(y.year), String(y.total_orders), String(y.revenue), String(y.gross_sales)]));
+        penjualan.push(['Tahun','Pesanan','Revenue (Rp)','Gross Sales (Rp)']);
+        yData.forEach(y => penjualan.push([Number(y.year), Number(y.total_orders), Number(y.revenue), Number(y.gross_sales)]));
       }
-      rows.push([]);
+      const wsPenjualan = XLSX.utils.aoa_to_sheet(penjualan);
+      wsPenjualan['!cols'] = penjualan[0].map(() => ({ wch: 18 }));
+      XLSX.utils.book_append_sheet(wb, wsPenjualan, 'Data Penjualan');
+
+      // ── Sheet 3: Top Produk ──────────────────────────────────────────────
       if ((data?.topPlants||[]).length > 0) {
-        rows.push(['=== TOP PRODUK ===']);
-        rows.push(['No','Nama Produk','Kategori','Unit Terjual','Revenue (Rp)','Pesanan']);
-        (data?.topPlants||[]).forEach((p,i) => rows.push([String(i+1),p.name,p.category_name,String(p.total_sold),String(p.revenue),String(p.order_count)]));
-        rows.push([]);
+        const topProduk = [['No','Nama Produk','Kategori','Unit Terjual','Revenue (Rp)','Pesanan']];
+        (data?.topPlants||[]).forEach((p,i) => topProduk.push([i+1, p.name, p.category_name, Number(p.total_sold), Number(p.revenue), Number(p.order_count)]));
+        const wsTop = XLSX.utils.aoa_to_sheet(topProduk);
+        wsTop['!cols'] = [{wch:5},{wch:28},{wch:16},{wch:14},{wch:16},{wch:12}];
+        XLSX.utils.book_append_sheet(wb, wsTop, 'Top Produk');
       }
+
+      // ── Sheet 4: Per Kategori ────────────────────────────────────────────
       if (cList.length > 0) {
-        rows.push(['=== PENJUALAN PER KATEGORI ===']);
-        rows.push(['Kategori','Unit Terjual','Revenue (Rp)','Persentase']);
+        const kategori = [['Kategori','Unit Terjual','Revenue (Rp)','Persentase']];
         cList.forEach(c => {
           const pct = cTotal > 0 ? Math.round(Number(c.revenue)/cTotal*100) : 0;
-          rows.push([c.category_name, String(c.total_sold), String(c.revenue), `${pct}%`]);
+          kategori.push([c.category_name, Number(c.total_sold), Number(c.revenue), `${pct}%`]);
         });
+        const wsKategori = XLSX.utils.aoa_to_sheet(kategori);
+        wsKategori['!cols'] = [{wch:22},{wch:14},{wch:16},{wch:12}];
+        XLSX.utils.book_append_sheet(wb, wsKategori, 'Per Kategori');
       }
-      const bom = '\uFEFF';
-      const csv = bom + rows.map(row => row.map(cell => `"${String(cell??'').replace(/"/g,'""')}"`).join(',')).join('\n');
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href = url;
-      a.download = `laporan-penjualan-${period}-${year}.csv`; a.click();
-      URL.revokeObjectURL(url);
+
+      XLSX.writeFile(wb, `laporan-penjualan-${period}-${year}.xlsx`);
     } finally { setExporting(false); }
   };
 
@@ -421,7 +432,7 @@ export default function AdminSalesReport() {
                 <path d="M12 3v13M7 12l5 5 5-5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
                 <path d="M3 19h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
               </svg>
-              {exporting ? 'Mengekspor...' : 'Export CSV'}
+              {exporting ? 'Mengekspor...' : 'Export Excel'}
             </button>
           </div>
         </div>
