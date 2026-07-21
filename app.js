@@ -32,10 +32,11 @@ app.use('/api/proof',          express.static(path.join(__dirname, 'uploads', 'p
 app.use('/api/product-images', express.static(path.join(__dirname, 'uploads', 'product-images')));
 
 // Routes
-app.use('/api/auth',     require('./routes/auth'));
-app.use('/api/products', require('./routes/product'));
-app.use('/api/orders',   require('./routes/order'));
-app.use('/api/admin',    require('./routes/admin'));
+app.use('/api/auth',          require('./routes/auth'));
+app.use('/api/customer-auth', require('./routes/customer-auth'));
+app.use('/api/products',      require('./routes/product'));
+app.use('/api/orders',        require('./routes/order'));
+app.use('/api/admin',         require('./routes/admin'));
 
 // Health Check
 app.get('/', (req, res) => {
@@ -83,8 +84,13 @@ app.listen(PORT, async () => {
   console.log(`║  PORT: ${PORT}${' '.repeat(30 - String(PORT).length)}║`);
   console.log(`╠════════════════════════════════════════╣`);
   console.log(`║  POST  /api/auth/login                 ║`);
+  console.log(`║  POST  /api/customer-auth/register     ║`);
+  console.log(`║  POST  /api/customer-auth/login        ║`);
+  console.log(`║  POST  /api/customer-auth/forgot-pw    ║`);
+  console.log(`║  GET   /api/customer-auth/me [auth]    ║`);
   console.log(`║  GET   /api/products                   ║`);
-  console.log(`║  POST  /api/orders                     ║`);
+  console.log(`║  POST  /api/orders           [auth]    ║`);
+  console.log(`║  GET   /api/orders/my        [auth]    ║`);
   console.log(`║  POST  /api/orders/upload-proof        ║`);
   console.log(`║  GET   /api/orders/track               ║`);
   console.log(`║  GET   /api/admin/dashboard  [auth]    ║`);

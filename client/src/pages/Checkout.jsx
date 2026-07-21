@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api, cart, rupiah, productImageUrl } from '../utils/api';
+import { useCustomerAuth } from '../context/CustomerAuthContext';
 
 // Sama persis dengan PlantImage di katalog
 function CartItemImage({ item }) {
@@ -24,13 +25,25 @@ function CartItemImage({ item }) {
 
 export default function Checkout() {
   const navigate = useNavigate();
+  const { customer } = useCustomerAuth();
   const [items,    setItems]   = useState([]);
   const [loading,  setLoading] = useState(false);
   const [error,    setError]   = useState(null);
   const [form, setForm] = useState({
-    customer_name: '', customer_phone: '', customer_email: '',
-    customer_address: '', notes: '',
+    customer_phone: customer?.phone_number || '',
+    customer_address: customer?.address || '',
+    notes: '',
   });
+
+  useEffect(() => {
+    if (customer) {
+      setForm(f => ({
+        ...f,
+        customer_phone: f.customer_phone || customer.phone_number || '',
+        customer_address: f.customer_address || customer.address || '',
+      }));
+    }
+  }, [customer]);
 
   useEffect(() => {
     const c = cart.get();
@@ -42,7 +55,6 @@ export default function Checkout() {
     ).then(results => {
       const map = Object.fromEntries(results.map(r => [r.id, r.image_url]));
       const enriched = c.map(i => i.image_url ? i : { ...i, image_url: map[i.product_id] || null });
-      // Simpan kembali ke cart supaya sesi berikutnya langsung ada
       cart.save(enriched);
       setItems(enriched);
     });
@@ -186,9 +198,12 @@ export default function Checkout() {
 
         {/* ── Customer Form ── */}
         <div className="card">
-          <h3 style={{ marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: '1.1em' }}></span> Data Pemesan
+          <h3 style={{ marginBottom: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: '1.1em' }}></span> Data Pengiriman
           </h3>
+          <p style={{ color: 'var(--muted)', fontSize: '12.5px', marginBottom: 20 }}>
+            Pesanan atas nama <strong>{customer?.name}</strong> ({customer?.email})
+          </p>
 
           {error && (
             <div className="alert alert-danger" style={{ marginBottom: 18 }}>
@@ -198,24 +213,10 @@ export default function Checkout() {
 
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div className="form-group">
-              <label className="form-label">Nama Lengkap *</label>
-              <input className="input" name="customer_name" required
-                placeholder="Budi Santoso"
-                value={form.customer_name} onChange={handleChange} />
-            </div>
-
-            <div className="form-group">
               <label className="form-label">Nomor WhatsApp *</label>
               <input className="input" name="customer_phone" required type="tel"
                 placeholder="08123456789"
                 value={form.customer_phone} onChange={handleChange} />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Email (opsional)</label>
-              <input className="input" name="customer_email" type="email"
-                placeholder="email@contoh.com"
-                value={form.customer_email} onChange={handleChange} />
             </div>
 
             <div className="form-group">

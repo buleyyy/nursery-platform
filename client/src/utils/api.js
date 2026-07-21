@@ -3,11 +3,13 @@
 // Prod : VITE_API_URL = 'https://your-backend.up.railway.app' → fetch langsung ke Railway
 const BASE = (import.meta.env.VITE_API_URL || '') + '/api';
 
-const getAdminToken = () => localStorage.getItem('adminToken') || '';
+const getAdminToken    = () => localStorage.getItem('adminToken') || '';
+const getCustomerToken = () => localStorage.getItem('customerToken') || '';
 
-const req = async (method, path, body, auth = false) => {
+const req = async (method, path, body, authType = null) => {
   const headers = { 'Content-Type': 'application/json' };
-  if (auth) headers['Authorization'] = `Bearer ${getAdminToken()}`;
+  if (authType === 'admin')    headers['Authorization'] = `Bearer ${getAdminToken()}`;
+  if (authType === 'customer') headers['Authorization'] = `Bearer ${getCustomerToken()}`;
 
   const res = await fetch(`${BASE}${path}`, {
     method,
@@ -23,8 +25,11 @@ export const api = {
   // Public
   getProducts:      (params = '')  => req('GET', `/products${params}`),
   getProduct:       (id)           => req('GET', `/products/${id}`),
-  createOrder:      (body)         => req('POST', '/orders', body),
   trackOrder:       (params)       => req('GET', `/orders/track?${params}`),
+
+  // Customer-auth-protected
+  createOrder:      (body)         => req('POST', '/orders', body, 'customer'),
+  myOrders:         ()             => req('GET', '/orders/my', null, 'customer'),
 
   // Upload bukti transfer — kirim FormData, bukan JSON
   uploadProof: async (orderNumber, file) => {
@@ -41,24 +46,31 @@ export const api = {
     return data;
   },
 
-  // Auth
+  // Admin auth
   login:            (body)         => req('POST', '/auth/login', body),
 
+  // Customer auth
+  customerRegister:      (body) => req('POST', '/customer-auth/register', body),
+  customerLogin:          (body) => req('POST', '/customer-auth/login', body),
+  customerForgotPassword: (body) => req('POST', '/customer-auth/forgot-password', body),
+  customerResetPassword:  (body) => req('POST', '/customer-auth/reset-password', body),
+  customerMe:              ()    => req('GET', '/customer-auth/me', null, 'customer'),
+
   // Admin (protected)
-  dashboard:        ()             => req('GET', '/admin/dashboard', null, true),
-  adminOrders:      (params = '')  => req('GET', `/admin/orders${params}`, null, true),
-  adminOrderDetail: (id)           => req('GET', `/admin/orders/${id}`, null, true),
-  updateStatus:     (id, body)     => req('PUT', `/admin/orders/${id}/status`, body, true),
-  confirmPayment:   (id, body)     => req('PUT', `/admin/orders/${id}/payment`, body, true),
-  rejectPayment:    (id, body)     => req('PUT', `/admin/orders/${id}/reject`,  body, true),
-  adminProducts:    ()             => req('GET', '/admin/products', null, true),
-  adminCategories:  ()             => req('GET', '/admin/categories', null, true),
-  createCategory:   (body)         => req('POST', '/admin/categories', body, true),
-  updateCategory:   (id, body)     => req('PUT', `/admin/categories/${id}`, body, true),
-  deleteCategory:   (id)           => req('DELETE', `/admin/categories/${id}`, null, true),
-  createProduct:    (body)         => req('POST', '/admin/products', body, true),
-  updateProduct:    (id, body)     => req('PUT', `/admin/products/${id}`, body, true),
-  deleteProduct:    (id)           => req('DELETE', `/admin/products/${id}`, null, true),
+  dashboard:        ()             => req('GET', '/admin/dashboard', null, 'admin'),
+  adminOrders:      (params = '')  => req('GET', `/admin/orders${params}`, null, 'admin'),
+  adminOrderDetail: (id)           => req('GET', `/admin/orders/${id}`, null, 'admin'),
+  updateStatus:     (id, body)     => req('PUT', `/admin/orders/${id}/status`, body, 'admin'),
+  confirmPayment:   (id, body)     => req('PUT', `/admin/orders/${id}/payment`, body, 'admin'),
+  rejectPayment:    (id, body)     => req('PUT', `/admin/orders/${id}/reject`,  body, 'admin'),
+  adminProducts:    ()             => req('GET', '/admin/products', null, 'admin'),
+  adminCategories:  ()             => req('GET', '/admin/categories', null, 'admin'),
+  createCategory:   (body)         => req('POST', '/admin/categories', body, 'admin'),
+  updateCategory:   (id, body)     => req('PUT', `/admin/categories/${id}`, body, 'admin'),
+  deleteCategory:   (id)           => req('DELETE', `/admin/categories/${id}`, null, 'admin'),
+  createProduct:    (body)         => req('POST', '/admin/products', body, 'admin'),
+  updateProduct:    (id, body)     => req('PUT', `/admin/products/${id}`, body, 'admin'),
+  deleteProduct:    (id)           => req('DELETE', `/admin/products/${id}`, null, 'admin'),
 
   // Upload foto produk — FormData
   uploadProductImage: async (productId, file) => {
@@ -73,7 +85,7 @@ export const api = {
     if (!res.ok) throw new Error(data.message || 'Upload foto gagal');
     return data;
   },
-  salesReport: (year, period = 'monthly') => req('GET', `/admin/sales-report?year=${year}&period=${period}`, null, true),
+  salesReport: (year, period = 'monthly') => req('GET', `/admin/sales-report?year=${year}&period=${period}`, null, 'admin'),
 };
 
 // Cart helpers (localStorage)

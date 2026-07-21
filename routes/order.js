@@ -4,6 +4,7 @@ const multer     = require('multer');
 const path       = require('path');
 const fs         = require('fs');
 const orderController = require('../controllers/order.controllers');
+const { customerAuth } = require('../middleware/auth');
 
 // ─── Setup multer storage ────────────────────────────────────────────────────
 const uploadDir = path.join(__dirname, '..', 'uploads', 'payment-proofs');
@@ -29,7 +30,8 @@ const upload = multer({
 });
 
 // ─── Routes ──────────────────────────────────────────────────────────────────
-router.post('/',        orderController.createOrder);
+router.post('/',        customerAuth, orderController.createOrder);
+router.get('/my',       customerAuth, orderController.getMyOrders);
 router.get('/track',    orderController.getOrder);
 
 // Upload bukti pembayaran (public — customer upload sendiri)

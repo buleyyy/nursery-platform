@@ -1,12 +1,15 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { cart } from '../utils/api';
+import { useCustomerAuth } from '../context/CustomerAuthContext';
 
 export default function UserLayout({ children }) {
   const [cartCount, setCartCount] = useState(0);
   const [scrolled, setScrolled]   = useState(false);
+  const [menuOpen, setMenuOpen]   = useState(false);
   const navigate  = useNavigate();
   const location  = useLocation();
+  const { customer, logout } = useCustomerAuth();
 
   useEffect(() => { setCartCount(cart.count()); }, [location]);
 
@@ -16,7 +19,14 @@ export default function UserLayout({ children }) {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
+  useEffect(() => { setMenuOpen(false); }, [location]);
+
   const isActive = (path) => location.pathname === path;
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
 
   return (
     <>
@@ -59,6 +69,7 @@ export default function UserLayout({ children }) {
           {[
             { to: '/',       label: 'Katalog' },
             { to: '/track',  label: 'Lacak Pesanan' },
+            ...(customer ? [{ to: '/my-orders', label: 'Riwayat Pesanan' }] : []),
           ].map(({ to, label }) => (
             <Link key={to} to={to} style={{
               color: isActive(to) ? 'var(--green)' : 'var(--text-2)',
@@ -72,32 +83,83 @@ export default function UserLayout({ children }) {
           ))}
         </div>
 
-        {/* Cart button — keranjang + jumlah + "item", tanpa bubble */}
-        <button
-          onClick={() => navigate('/checkout')}
-          className="btn btn-sm"
-          style={{
-            display: 'flex', alignItems: 'center', gap: 7,
-            paddingLeft: 13, paddingRight: 14,
-            background: cartCount > 0 ? 'var(--green)' : 'var(--elevated)',
-            color: cartCount > 0 ? '#fff' : 'var(--text-2)',
-            border: '1.5px solid',
-            borderColor: cartCount > 0 ? 'var(--green)' : 'var(--border)',
-            boxShadow: cartCount > 0 ? '0 2px 8px rgba(45,140,78,0.25)' : 'none',
-          }}
-        >
-          {/* Icon keranjang */}
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <path d="M1 1.5h2.2l2.1 7.5h6.5l1.7-5.2H5.2" stroke="currentColor" strokeWidth="1.45" strokeLinecap="round" strokeLinejoin="round"/>
-            <circle cx="7.2" cy="13" r="1.1" fill="currentColor"/>
-            <circle cx="12" cy="13" r="1.1" fill="currentColor"/>
-          </svg>
+        {/* Right side: account + cart */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {customer ? (
+            <div style={{ position: 'relative' }}>
+              <button
+                onClick={() => setMenuOpen(o => !o)}
+                className="btn btn-sm"
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 7,
+                  background: 'var(--elevated)', color: 'var(--text-2)',
+                  border: '1.5px solid var(--border)',
+                }}
+              >
+                <span style={{
+                  width: 20, height: 20, borderRadius: '50%',
+                  background: 'var(--green)', color: '#fff',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: '11px', fontWeight: 700,
+                }}>{customer.name?.[0]?.toUpperCase() || '?'}</span>
+                <span style={{ fontSize: '13px', fontWeight: 600, maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {customer.name}
+                </span>
+              </button>
+              {menuOpen && (
+                <div style={{
+                  position: 'absolute', top: 'calc(100% + 6px)', right: 0,
+                  background: 'var(--surface)', border: '1.5px solid var(--border)',
+                  borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+                  minWidth: 170, overflow: 'hidden', zIndex: 200,
+                }}>
+                  <Link to="/my-orders" style={{
+                    display: 'block', padding: '10px 14px', fontSize: '13px',
+                    color: 'var(--text-2)', textDecoration: 'none',
+                  }}>Riwayat Pesanan</Link>
+                  <button onClick={handleLogout} style={{
+                    display: 'block', width: '100%', textAlign: 'left',
+                    padding: '10px 14px', fontSize: '13px', color: '#b91c1c',
+                    background: 'none', border: 'none', cursor: 'pointer',
+                    borderTop: '1px solid var(--border)',
+                  }}>Keluar</button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <Link to="/login" className="btn btn-sm" style={{
+              background: 'var(--elevated)', color: 'var(--text-2)',
+              border: '1.5px solid var(--border)',
+            }}>Masuk</Link>
+          )}
 
-          {/* Jumlah + label — menyamping, tidak ada bubble */}
-          <span style={{ fontSize: '13px', fontWeight: 600, letterSpacing: '-0.1px' }}>
-            {cartCount > 0 ? `${cartCount} item` : 'Keranjang'}
-          </span>
-        </button>
+          {/* Cart button — keranjang + jumlah + "item", tanpa bubble */}
+          <button
+            onClick={() => navigate('/checkout')}
+            className="btn btn-sm"
+            style={{
+              display: 'flex', alignItems: 'center', gap: 7,
+              paddingLeft: 13, paddingRight: 14,
+              background: cartCount > 0 ? 'var(--green)' : 'var(--elevated)',
+              color: cartCount > 0 ? '#fff' : 'var(--text-2)',
+              border: '1.5px solid',
+              borderColor: cartCount > 0 ? 'var(--green)' : 'var(--border)',
+              boxShadow: cartCount > 0 ? '0 2px 8px rgba(45,140,78,0.25)' : 'none',
+            }}
+          >
+            {/* Icon keranjang */}
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M1 1.5h2.2l2.1 7.5h6.5l1.7-5.2H5.2" stroke="currentColor" strokeWidth="1.45" strokeLinecap="round" strokeLinejoin="round"/>
+              <circle cx="7.2" cy="13" r="1.1" fill="currentColor"/>
+              <circle cx="12" cy="13" r="1.1" fill="currentColor"/>
+            </svg>
+
+            {/* Jumlah + label — menyamping, tidak ada bubble */}
+            <span style={{ fontSize: '13px', fontWeight: 600, letterSpacing: '-0.1px' }}>
+              {cartCount > 0 ? `${cartCount} item` : 'Keranjang'}
+            </span>
+          </button>
+        </div>
       </nav>
 
       <main>{children}</main>

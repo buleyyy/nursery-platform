@@ -10,15 +10,17 @@ const generateOrderNumber = () => {
   return `ORD-${dateStr}-${rand}`;
 };
 
-// ─── Buat Pesanan Baru ───────────────────────────────────────────────────────
+// ─── Buat Pesanan Baru (wajib login) ─────────────────────────────────────────
 exports.createOrder = async (req, res) => {
   const {
-    customer_name, customer_phone, customer_email,
-    customer_address, items, notes
+    customer_address, items, notes,
+    customer_phone // opsional: update no HP pengiriman kalau beda dari profil
   } = req.body;
 
-  if (!customer_name || !customer_phone || !customer_address) {
-    return res.status(400).json({ success: false, message: 'Nama, nomor HP, dan alamat wajib diisi' });
+  const customerId = req.customerId;
+
+  if (!customer_address) {
+    return res.status(400).json({ success: false, message: 'Alamat pengiriman wajib diisi' });
   }
   if (!Array.isArray(items) || items.length === 0) {
     return res.status(400).json({ success: false, message: 'Keranjang belanja kosong' });
@@ -28,17 +30,15 @@ exports.createOrder = async (req, res) => {
   try {
     await connection.beginTransaction();
 
-    await connection.query(
-      `INSERT INTO customers (phone_number, name, email, address)
-       VALUES (?, ?, ?, ?)
-       ON DUPLICATE KEY UPDATE name=VALUES(name), email=VALUES(email), address=VALUES(address)`,
-      [customer_phone, customer_name, customer_email || null, customer_address]
-    );
-
     const [[customer]] = await connection.query(
-      'SELECT id FROM customers WHERE phone_number = ?', [customer_phone]
+      'SELECT id, name, phone_number FROM customers WHERE id = ?', [customerId]
     );
-    if (!customer) throw new Error('Gagal menyimpan data pelanggan');
+    if (!customer) throw new Error('Akun pelanggan tidak ditemukan, silakan login ulang');
+
+    if (customer_phone && customer_phone !== customer.phone_number) {
+      await connection.query('UPDATE customers SET phone_number = ? WHERE id = ?', [customer_phone, customerId]);
+      customer.phone_number = customer_phone;
+    }
 
     let totalPrice    = 0;
     const enrichedItems = [];
@@ -102,7 +102,7 @@ exports.createOrder = async (req, res) => {
       message: 'Pesanan berhasil dibuat',
       data: {
         order_id: orderId, order_number: orderNumber,
-        customer_name, customer_phone,
+        customer_name: customer.name, customer_phone: customer.phone_number,
         total_price: totalPrice,
         order_status: 'pending', payment_status: 'pending',
         items_count: enrichedItems.length
@@ -175,7 +175,44 @@ exports.uploadPaymentProof = async (req, res) => {
   }
 };
 
-// ─── Cek / Lacak Pesanan ─────────────────────────────────────────────────────
+// ─── Riwayat Pesanan Saya (wajib login) ──────────────────────────────────────
+exports.getMyOrders = async (req, res) => {
+  try {
+    const [orders] = await pool.query(
+      `SELECT o.*,
+              c.name                        AS customer_name,
+              COALESCE(c.phone_number, '-') AS phone_number
+       FROM orders o
+       JOIN customers c ON o.customer_id = c.id
+       WHERE o.customer_id = ?
+       ORDER BY o.order_date DESC`,
+      [req.customerId]
+    );
+
+    const result = await Promise.all(orders.map(async (order) => {
+      const [items] = await pool.query(
+        `SELECT oi.*, p.name AS product_name,
+                COALESCE(p.image_emoji,'🌿') AS image_emoji,
+                cat.name AS category_name
+         FROM order_items oi
+         JOIN products   p   ON oi.product_id = p.id
+         JOIN categories cat ON p.category_id  = cat.id
+         WHERE oi.order_id = ?`, [order.id]
+      );
+      const [[payment]] = await pool.query(
+        'SELECT * FROM payment_records WHERE order_id = ?', [order.id]
+      );
+      return { ...order, items, payment: payment || null };
+    }));
+
+    return res.json({ success: true, data: result });
+  } catch (error) {
+    console.error('❌ getMyOrders:', error.sqlMessage || error.message);
+    return res.status(500).json({ success: false, message: 'Gagal mengambil riwayat pesanan' });
+  }
+};
+
+// ─── Cek / Lacak Pesanan (public, by order number / phone) ──────────────────
 exports.getOrder = async (req, res) => {
   const { orderNumber, phone } = req.query;
 

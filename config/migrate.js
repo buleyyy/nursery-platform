@@ -176,6 +176,24 @@ async function runMigrations() {
     await addCol('customers', 'phone_number', 'VARCHAR(20)');
     await addCol('customers', 'email',        'VARCHAR(150)');
     await addCol('customers', 'address',      'TEXT');
+    await addCol('customers', 'password',            'VARCHAR(255) DEFAULT NULL');
+    await addCol('customers', 'reset_token',          'VARCHAR(255) DEFAULT NULL');
+    await addCol('customers', 'reset_token_expires',  'TIMESTAMP NULL DEFAULT NULL');
+
+    // Unique index buat email (dibutuhkan utk register/login) — aman dijalankan berulang
+    try {
+      const [idx] = await conn.query(
+        `SELECT COUNT(*) AS n FROM information_schema.STATISTICS
+         WHERE TABLE_SCHEMA=? AND TABLE_NAME='customers' AND INDEX_NAME='uniq_customers_email'`,
+        [db]
+      );
+      if (idx[0].n === 0) {
+        await conn.query(`ALTER TABLE customers ADD UNIQUE INDEX uniq_customers_email (email)`);
+        console.log('  [migrate] ✚ ADD UNIQUE INDEX customers.email');
+      }
+    } catch (e) {
+      console.log('  [migrate] ⚠ unique email index skip:', e.sqlMessage || e.message);
+    }
 
     // ── products ─────────────────────────────────────────────────────────────
     await renameCol('products', 'stok',      'stock_quantity', 'INT NOT NULL DEFAULT 0');
