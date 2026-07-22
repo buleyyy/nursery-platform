@@ -414,7 +414,7 @@ export default function AdminProducts() {
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept="image/jpeg,image/png,image"
+                  accept="image/jpeg,image/png"
                   style={{ display: 'none' }}
                   onChange={handleImagePick}
                 />
