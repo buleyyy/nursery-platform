@@ -106,7 +106,6 @@ function UploadProof({ orderNumber, existingProof, onSuccess }) {
               marginTop: 10, fontSize: '12px', color: 'var(--muted)',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
             }}>
-              </span> Klik atau seret untuk ganti foto
             </div>
           </div>
         ) : (
